@@ -410,14 +410,14 @@
                     var i, n, a, o, u, d, c, m, g, v;
                     e = e || {};
                     let { isSmartPreview: E, hasEverFinished: p } = t || {},
-                        y = (0, s.QBb)(null == e ? void 0 : e.derivedColors),
+                        y = (0, s.QBb)(null == e ? void 0 : (e?.substituted?.derivedColors ?? e.derivedColors)),
                         f = E ? (null == (i = e.smartPreviewParams) ? void 0 : i.durationMs) : null == e ? void 0 : e.durationMs,
                         h = (0, l.wg)({ available: !!(null == (n = e.specialAudioResources) ? void 0 : n.includes(r.SMART_PREVIEW)) });
                     return (0, l.wg)({
                         id: (e.id || 0).toString(),
                         isAvailable: !!(null == e ? void 0 : e.available),
                         isRemoved: (null == e ? void 0 : e.error) === 'not-found',
-                        title: null != (g = null == e ? void 0 : e.title) ? g : '',
+                        title: e?.substituted?.title ?? e?.title ?? '',
                         version: null == e ? void 0 : e.version,
                         durationMs: f,
                         coverUri: null == e ? void 0 : e.coverUri,
@@ -444,7 +444,7 @@
                             }))(null == e ? void 0 : e.streamProgress, { hasEverFinished: p }),
                         shortDescription: null != (v = e.shortDescription) ? v : '',
                         trailer: h,
-                        clipIds: e.clipIds,
+                        clipIds: e?.substituted?.clipIds ?? e.clipIds,
                         major: e.major,
                         genre: null == (m = e.albums) || null == (c = m[0]) ? void 0 : c.genre,
                         realId: e.realId,
