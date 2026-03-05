@@ -45,6 +45,55 @@ function createIntegrityUtils(runtime) {
         }
     }
 
+    function updateIntegrityHashInExeRcData(exePath, newHash) {
+        const rawBuf = fs.readFileSync(exePath);
+        const marker = Buffer.from('"file":"resources\\\\app.asar"', 'utf8');
+        const markerIdx = rawBuf.indexOf(marker);
+        if (markerIdx < 0) throw new Error('Маркер RCDATA integrity JSON не найден');
+
+        const startIdx = rawBuf.lastIndexOf(Buffer.from('[', 'utf8'), markerIdx);
+        if (startIdx < 0) throw new Error('Начало массива RCDATA integrity JSON не найдено');
+
+        const endIdx = rawBuf.indexOf(Buffer.from(']', 'utf8'), markerIdx + marker.length);
+        if (endIdx < 0) throw new Error('Конец массива RCDATA integrity JSON не найден');
+
+        const jsonBuf = rawBuf.subarray(startIdx, endIdx + 1);
+        const arr = JSON.parse(jsonBuf.toString('utf8'));
+        if (!Array.isArray(arr)) throw new Error('RCDATA integrity JSON не является массивом');
+
+        const entry = arr.find((item) => item && typeof item.file === 'string' && item.file.replace(/\\\\/g, '\\').toLowerCase() === 'resources\\app.asar');
+        if (!entry) throw new Error('Запись resources\\app.asar не найдена в RCDATA integrity JSON');
+
+        entry.value = newHash;
+        const newJson = JSON.stringify(arr);
+        if (Buffer.byteLength(newJson, 'utf8') !== jsonBuf.length) {
+            throw new Error('Длина RCDATA integrity JSON не совпадает');
+        }
+
+        Buffer.from(newJson, 'utf8').copy(rawBuf, startIdx);
+        fs.writeFileSync(exePath, rawBuf);
+    }
+
+    function updateIntegrityHashInExeLegacy(exePath, oldHexStr, newHexStr) {
+        const oldBuf = Buffer.from(oldHexStr, 'ascii');
+        const newBuf = Buffer.from(newHexStr, 'ascii');
+        const fileBuf = fs.readFileSync(exePath);
+        let count = 0;
+        let offset = 0;
+
+        while (true) {
+            const idx = fileBuf.indexOf(oldBuf, offset);
+            if (idx === -1) break;
+            newBuf.copy(fileBuf, idx);
+            count++;
+            offset = idx + oldBuf.length;
+        }
+
+        if (count === 0) return 0;
+        fs.writeFileSync(exePath, fileBuf);
+        return count;
+    }
+
     async function bypassWinAsarIntegrity(appPath) {
         console.log(`Подготовка к замене хеша`);
 
@@ -59,6 +108,19 @@ function createIntegrityUtils(runtime) {
             const oldHexStr = state.oldYMHashOverride ?? state.oldYMHash;
             const newHexStr = calcASARHeaderHash(DIRECT_DIST_PATH).hash;
 
+            try {
+                updateIntegrityHashInExeRcData(exePath, newHexStr);
+                console.log('Хеш заменён методом RCDATA JSON.');
+                return;
+            } catch (error) {
+                console.log(`Метод RCDATA JSON завершился ошибкой, переключаюсь на старый способ: ${error.message}`);
+            }
+
+            if (typeof oldHexStr !== 'string' || oldHexStr.length === 0) {
+                console.log('Переход на старый способ пропущен: отсутствует старый хеш.');
+                return;
+            }
+
             console.log(`Хеши: ${oldHexStr} ${newHexStr} ${oldHexStr.length} ${newHexStr.length}`);
 
             if (oldHexStr.length !== newHexStr.length) {
@@ -71,27 +133,13 @@ function createIntegrityUtils(runtime) {
                 return;
             }
 
-            const oldBuf = Buffer.from(oldHexStr, 'ascii');
-            const newBuf = Buffer.from(newHexStr, 'ascii');
-            const fileBuf = fs.readFileSync(exePath);
-            let count = 0;
-            let offset = 0;
-
-            while (true) {
-                const idx = fileBuf.indexOf(oldBuf, offset);
-                if (idx === -1) break;
-                newBuf.copy(fileBuf, idx);
-                count++;
-                offset = idx + oldBuf.length;
-            }
-
+            const count = updateIntegrityHashInExeLegacy(exePath, oldHexStr, newHexStr);
             if (count === 0) {
                 console.log('Шаблон не найден, изменений не внесено.');
                 return;
             }
 
-            fs.writeFileSync(exePath, fileBuf);
-            console.log(`Успешно заменено вхождений: ${count}.`);
+            console.log(`Старый способ завершён, заменено вхождений: ${count}.`);
         } catch (error) {
             console.log('Ошибка: ' + error.message);
         }
