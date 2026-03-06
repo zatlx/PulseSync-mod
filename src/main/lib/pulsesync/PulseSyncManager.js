@@ -56,8 +56,8 @@ class PulseSyncManager extends EventEmitter {
         this._lastPlayerState = null;
         this.hasReloadedOnTheme = false;
         this._applyInFlight = null;
-        this.reconnectDelaysMs = [5000, 15000, 30000];
-        this.maxReconnectDelayMs = 300000;
+        this.reconnectDelaysMs = [3000, 8000, 15000, 30000, 60000, 120000];
+        this.maxReconnectDelayMs = 120000;
         this.reconnectAttempt = 0;
         this.reconnectTimer = null;
         this.isConnecting = false;
