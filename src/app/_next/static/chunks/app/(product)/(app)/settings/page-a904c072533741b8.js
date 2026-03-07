@@ -1691,13 +1691,6 @@
                                 window.forcePlayerBarRerender?.();
                             }, 100);
                         }, []),
-                        onShowRepeatButtonOnVibe = (0, g.useCallback)(async (e) => {
-                            console.log('showRepeatButtonOnVibe toggled. Value: ', e);
-                            window.nativeSettings.set('modSettings.playerBarEnhancement.showRepeatButtonOnVibe', e);
-                            setTimeout(() => {
-                                window.forcePlayerBarRerender?.();
-                            }, 100);
-                        }, []),
                         onTimestampsToggle = (0, g.useCallback)(
                             async (e) => {
                                 console.log('alwaysShowTimestamps toggled. Value: ', e);
@@ -1780,15 +1773,6 @@
                                         description: 'Чтобы их положение соответствовало остальным платформам',
                                         onChange: onSwapDislikeToggle,
                                         isChecked: window.nativeSettings.get('modSettings.playerBarEnhancement.changeDislikeButtonPos'),
-                                    }),
-                                }),
-                                (0, n.jsx)('li', {
-                                    className: $().item,
-                                    children: (0, n.jsx)(G, {
-                                        title: 'Повтор трека в Моей Волне',
-                                        description: 'Кнопка повтора будет доступна даже если играет Моя Волна',
-                                        onChange: onShowRepeatButtonOnVibe,
-                                        isChecked: window.nativeSettings.get('modSettings.playerBarEnhancement.showRepeatButtonOnVibe'),
                                     }),
                                 }),
                                 (0, n.jsx)('li', {

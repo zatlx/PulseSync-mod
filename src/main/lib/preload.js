@@ -38,7 +38,6 @@ electron_1.contextBridge.exposeInMainWorld('BRANCH', String(config_js_1.config.b
 electron_1.contextBridge.exposeInMainWorld('PLATFORM', deviceInfo.os);
 electron_1.contextBridge.exposeInMainWorld('DEVICE_INFO', deviceInfo);
 electron_1.contextBridge.exposeInMainWorld('DEVICE_HOSTNAME', (0, deviceInfo_js_1.getDeviceHostname)());
-electron_1.contextBridge.exposeInMainWorld('SHOW_REPEAT_BUTTON_ON_VIBE', () => store_js_1.getModSettings()?.playerBarEnhancement?.showRepeatButtonOnVibe);
 electron_1.contextBridge.exposeInMainWorld('VIBE_ANIMATION_INTENSITY_COEFFICIENT', () => store_js_1.getModSettings()?.vibeAnimationEnhancement?.vibeIntensityCoefficient);
 electron_1.contextBridge.exposeInMainWorld('VIBE_ANIMATION_MAX_FPS', () => store_js_1.getModSettings()?.vibeAnimationEnhancement?.maxFPS);
 electron_1.contextBridge.exposeInMainWorld('VIBE_ANIMATION_USE_DYNAMIC_ENERGY', () => store_js_1.getModSettings()?.vibeAnimationEnhancement?.useDynamicEnergy);

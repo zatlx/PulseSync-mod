@@ -175,7 +175,6 @@ const init = () => {
         playerBarEnhancement: {
             showCodecInsteadOfQualityMark: true,
             alwaysShowTimestamps: false,
-            showRepeatButtonOnVibe: true,
             changeDislikeButtonPos: true,
             disablePerTrackColors: false,
             alwaysWideBar: false,
