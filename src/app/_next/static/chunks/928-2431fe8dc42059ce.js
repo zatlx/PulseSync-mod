@@ -10766,6 +10766,8 @@
             };
             let ao = (0, d.PA)((e) => {
                 var t;
+                let [, forcePlayerBarRerender] = (0, u.useReducer)((x) => x + 1, 0);
+                window.forcePlayerBarRerender = forcePlayerBarRerender;
                 let { className: a, entityMeta: i, isLiked: r, isDisliked: l, onLikeClick: o, onDislikeClick: d } = e,
                     {
                         user: p,

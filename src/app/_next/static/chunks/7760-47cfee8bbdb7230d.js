@@ -3662,7 +3662,7 @@
                 }
                 createAnalyzerNode(e) {
                     let t = e.createAnalyser();
-                    return (t.fftSize = 32), (t.smoothingTimeConstant = 0), t;
+                    return (t.fftSize = 1024), (t.smoothingTimeConstant = 0.4), t;
                 }
                 checkAndResumeAudioContext(e) {
                     let t = () => {
