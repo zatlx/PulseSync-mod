@@ -629,6 +629,9 @@
                 sb: () => p.useRefreshTracksAvailability,
                 sq: () => m.useReleaseNotes,
                 OM: () => v.useSendPlayerState,
+                sendDownloadTrack: () => sendDownloadTrack,
+                sendDownloadCurrentTrack: () => sendDownloadCurrentTrack,
+                sendDownloadTracks: () => sendDownloadTracks,
             });
             let s = () => {
                 document.addEventListener('auxclick', (e) => e.preventDefault()),
@@ -640,6 +643,18 @@
             let l = (e) => {
                     var t;
                     null == (t = window.desktopEvents) || t.send(o.EE.APPLICATION_READY, e);
+                },
+                sendDownloadTrack = (e, t) => {
+                    var a;
+                    null == (a = window.desktopEvents) || a.send(o.EE.DOWNLOAD_TRACK, e, t);
+                },
+                sendDownloadCurrentTrack = (e) => {
+                    var t;
+                    null == (t = window.desktopEvents) || t.send(o.EE.DOWNLOAD_CURRENT_TRACK, e);
+                },
+                sendDownloadTracks = (e, t, a) => {
+                    var s;
+                    null == (s = window.desktopEvents) || s.send(o.EE.DOWNLOAD_TRACKS, e, t, a);
                 },
                 n = (e) => {
                     let t = e === o.Sxu.Light ? '#FFFFFF' : '#000000';

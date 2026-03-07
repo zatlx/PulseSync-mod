@@ -2496,7 +2496,22 @@
                     );
                 return (0, a.jsx)(v.Dr, { onClick: o, icon: m, className: ta().root, ...(0, u.Am)(u.S7.CONTEXT_MENU_DOWNLOAD_BUTTON), children: d });
             });
-            var tl = i(31367),
+            let downloadTrackToFile = (0, s.PA)((t) => {
+                let { track: e } = t,
+                    i = (0, n.useMemo)(() => `${e.artists.map((t) => t.name).join(', ')} — ${e.title}`, [e]),
+                    r = (0, n.useCallback)(() => {
+                        electronBridgeModule.sendDownloadTrack(e?.id, i);
+                    }, [e, i]);
+                return (0, a.jsx)(v.Dr, {
+                    onClick: r,
+                    icon: (0, a.jsx)(p.Icon, { variant: 'download', size: 'xxs' }),
+                    className: ta().root,
+                    ...(0, u.Am)(u.S7.CONTEXT_MENU_DOWNLOAD_BUTTON),
+                    children: 'Скачать в файл',
+                });
+            });
+            var electronBridgeModule = i(68317),
+                tl = i(31367),
                 ts = i.n(tl);
             let tn = (0, s.PA)((t) => {
                     let { track: e } = t,
@@ -2702,6 +2717,7 @@
                                           children: (0, a.jsx)(c.A, { id: 'non-music.navigate-to-clip' }),
                                       }),
                                   tV && (0, a.jsx)(tr, { track: F }),
+                                  (0, a.jsx)(downloadTrackToFile, { track: F }),
                                   ep &&
                                       (0, a.jsx)(v.Dr, {
                                           onClick: tL,

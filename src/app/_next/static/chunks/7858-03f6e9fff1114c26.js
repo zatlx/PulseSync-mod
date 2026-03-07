@@ -546,10 +546,24 @@
                 v = i(63695),
                 C = i(52733),
                 b = i(83252),
+                electronBridgeModule = i(68317),
                 h = i(80585),
                 x = i(23265),
                 k = i(61958),
                 P = i(83504);
+            let downloadPlaylistToFile = ({ playlist: e }) => {
+                let t = Array.isArray(e?.trackIds) ? e.trackIds : [],
+                    i = (0, u.c)(() => {
+                        e?.title && e?.trackIds?.length && electronBridgeModule.sendDownloadTracks(e.trackIds, 'playlist', e.title);
+                    });
+                return t.length
+                    ? (0, a.jsx)(k.Dr, {
+                          onClick: i,
+                          icon: (0, a.jsx)(g.Icon, { variant: 'download', size: 'xxs' }),
+                          children: 'Скачать в файл',
+                      })
+                    : null;
+            };
             let A = (0, n.PA)((e) => {
                 var t;
                 let { playlist: i, onOpenChange: r, open: n, ...l } = e,
@@ -586,6 +600,7 @@
                         !g && (0, a.jsx)(h.L1, { onClick: x, isPinned: i.isPinned }),
                         !i.isFavouritePlaylist && (0, a.jsx)(h.TW, { onClick: v, isLiked: i.isLiked, disabled: !y.isAuthorized }),
                         (null == (t = i.trailer) ? void 0 : t.isAvailable) && (0, a.jsx)(h.No, { onClick: I, disabled: !i.isAvailable }),
+                        (0, a.jsx)(downloadPlaylistToFile, { playlist: i }),
                     ],
                 });
             });

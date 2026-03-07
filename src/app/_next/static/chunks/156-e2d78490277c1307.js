@@ -1506,7 +1506,28 @@
                 b = i(83504),
                 v = i(83252),
                 p = i(80585),
+                y0 = i(5956),
+                electronBridgeModule = i(68317),
                 _ = i(50118);
+            let downloadTracksToFile = (0, a.PA)((e) => {
+                let { album: t, tracks: i } = e,
+                    a = (0, s.useMemo)(() => (Array.isArray(i) ? i.map((e) => e.id) : []), [i]),
+                    l = (0, s.useMemo)(() => {
+                        let e = Array.isArray(t.artists) ? t.artists.map((e) => e.name).join(', ') : t.artistName,
+                            i = [t.title];
+                        return ['album', 'single'].includes(t.type ?? 'album') && e && i.unshift(e), i.join(' — ');
+                    }, [t]),
+                    n = (0, c.c)(() => {
+                        a.length && electronBridgeModule.sendDownloadTracks(a, t.type ?? 'album', l);
+                    });
+                return a.length
+                    ? (0, r.jsx)(d.Dr, {
+                          onClick: n,
+                          icon: (0, r.jsx)(y0.Icon, { variant: 'download', size: 'xxs' }),
+                          children: 'Скачать в файл',
+                      })
+                    : null;
+            });
             let g = (0, a.PA)((e) => {
                 var t, i;
                 let { album: a, children: g, onOpenChange: A, open: C, wrapperClassName: y, variant: h, ...k } = e,
@@ -1517,6 +1538,7 @@
                         user: L,
                         experiments: K,
                         albumCPA: { isPlusCPAEnabled: I, isPlusCPAPlayerBarEnabled: T },
+                        album: albumStore,
                     } = (0, v.Pjs)(),
                     O = (0, m.KX)(a),
                     j = (0, m.A7)(a),
@@ -1579,6 +1601,7 @@
                         w && (0, r.jsx)(b.dx, { entityVariant: v.DwC.ARTIST, adminUrl: q }),
                         Y,
                         Z,
+                        (0, r.jsx)(downloadTracksToFile, { album: a, tracks: null == albumStore ? void 0 : albumStore.tracks }),
                         X,
                         ee,
                         g,

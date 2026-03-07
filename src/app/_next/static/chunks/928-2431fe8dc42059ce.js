@@ -10078,7 +10078,8 @@
                     });
                 },
                 an = (0, u.forwardRef)((e, t) => (0, s.jsx)(ai, { forwardRef: t, ...e }));
-            var ar = a(44123),
+            var electronBridgeModule = a(68317),
+                ar = a(44123),
                 al = a.n(ar);
             let ao = (0, d.PA)((e) => {
                 var t;
@@ -10093,6 +10094,7 @@
                     } = (0, n.Pjs)(),
                     [C, N] = (0, u.useState)(!1),
                     [f, S] = (0, u.useState)(!1),
+                    [downloadProgress, setDownloadProgress] = (0, u.useState)(0),
                     { formatMessage: T } = (0, O.A)(),
                     P = !g.isGenerativeContext,
                     E = g.canSpeed && (null == i ? void 0 : i.isNonMusic),
@@ -10112,6 +10114,9 @@
                     z = (0, Q.c)((e) => {
                         g.setVolume(e);
                     }),
+                    downloadCurrentTrack = (0, u.useCallback)(() => {
+                        i?.id && electronBridgeModule.sendDownloadCurrentTrack(i.id);
+                    }, [i]),
                     V = (0, Q.c)((e) => {
                         let t = e.target,
                             a = t instanceof Element && ['DIV', 'SECTION', 'SPAN'].includes(t.tagName);
@@ -10218,6 +10223,14 @@
                                 : null,
                         [X, i, L, j, g.isGenerativeContext],
                     );
+                (0, u.useEffect)(() => {
+                    let e = (e, t, a) => {
+                        'trackDownloadCurrent' === t && setDownloadProgress(a);
+                    };
+                    return window.desktopEvents?.on?.(n.EE.PROGRESS_BAR_CHANGE, e), () => {
+                        window.desktopEvents?.off?.(n.EE.PROGRESS_BAR_CHANGE, e);
+                    };
+                }, []);
                 return (0, s.jsx)('section', {
                     style: b.isAdvertShown ? void 0 : M,
                     className: (0, c.$)(al().root, al().important, a),
@@ -10301,6 +10314,38 @@
                                                         E && (0, s.jsx)(h.ig, { iconSize: 'l' }),
                                                         $,
                                                         H,
+                                                        (0, s.jsx)(h.hj, {
+                                                            title: 'Скачать трек в файл',
+                                                            description: i?.id ? 'Скачать трек в читаемый файл на вашем ПК' : 'Не удалось получить данные о треке',
+                                                            children: (0, s.jsxs)('div', {
+                                                                style: { display: 'flex', flexDirection: 'column', gap: '2px', alignSelf: 'center', width: '24px' },
+                                                                children: [
+                                                                    (0, s.jsx)(_.$, {
+                                                                        radius: 'round',
+                                                                        size: 'xxxs',
+                                                                        variant: 'text',
+                                                                        disabled: !i?.id,
+                                                                        withRipple: !1,
+                                                                        'aria-label': 'Скачать трек в файл',
+                                                                        icon: (0, s.jsx)(D.Icon, { variant: 'download', size: 'xs' }),
+                                                                        onClick: downloadCurrentTrack,
+                                                                    }),
+                                                                    (0, s.jsx)('div', {
+                                                                        style: {
+                                                                            backgroundColor: 'var(--ym-controls-color-secondary-text-enabled)',
+                                                                            width: `${-100 === downloadProgress ? 0 : downloadProgress}%`,
+                                                                            transition:
+                                                                                downloadProgress >= 0 && downloadProgress < 100
+                                                                                    ? 'width 0.3s'
+                                                                                    : 'width 0.3s, opacity 0.3s linear 0.5s',
+                                                                            opacity: downloadProgress >= 0 && downloadProgress < 100 ? '1' : '0',
+                                                                            height: '2px',
+                                                                            borderRadius: '10px',
+                                                                        },
+                                                                    }),
+                                                                ],
+                                                            }),
+                                                        }),
                                                         (0, s.jsx)(tK, {
                                                             placement: 'bottom',
                                                             open: f,

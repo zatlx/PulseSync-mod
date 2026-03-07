@@ -2353,17 +2353,33 @@
                 ta = a(70140),
                 ti = a(97719),
                 tr = a(83504),
-                tl = a(54460);
+                tl = a(54460),
+                electronBridgeModule = a(68317);
+            let downloadTracksToFile = (0, d.PA)((e) => {
+                let { playlist: t, trackIds: a } = e,
+                    r = (0, c.useMemo)(() => `${t.title}`, [t]),
+                    l = (0, o.c)(() => {
+                        a?.length && electronBridgeModule.sendDownloadTracks(a, 'playlist', r);
+                    });
+                return a?.length
+                    ? (0, n.jsx)(eF.Dr, {
+                          onClick: l,
+                          icon: (0, n.jsx)(j.Icon, { variant: 'download', size: 'xxs' }),
+                          children: 'Скачать в файл',
+                      })
+                    : null;
+            });
             let to = (0, d.PA)((e) => {
                     var t, a, r, l;
-                    let { playlist: s, onOpenChange: d, open: u, wrapperClassName: p, ...m } = e,
-                        { shouldShowBuySubscriptionModal: v, showBuySubscriptionModal: x } = (0, i.qBP)(),
-                        {
+                let { playlist: s, onOpenChange: d, open: u, wrapperClassName: p, ...m } = e,
+                    { shouldShowBuySubscriptionModal: v, showBuySubscriptionModal: x } = (0, i.qBP)(),
+                    {
                             settings: { isMobile: g },
                             trailer: y,
                             playlist: {
                                 filters: { activeFilter: b, analyticsParamsActiveFilterIndex: h },
                                 items: C,
+                                trackIds: eg,
                             },
                             user: P,
                             experiments: A,
@@ -2451,6 +2467,7 @@
                             L && (0, n.jsx)(tr.dx, { entityVariant: i.DwC.PLAYLIST, adminUrl: s.isFavouritePlaylist ? void 0 : ei, withPlaylistPageFeatures: !0 }),
                             !g && (0, n.jsx)(N.L1, { onClick: I, isPinned: s.isPinned }),
                             !s.isFavouritePlaylist && (0, n.jsx)(N.TW, { onClick: w, isLiked: s.isLiked, disabled: !P.isAuthorized }),
+                            (0, n.jsx)(downloadTracksToFile, { playlist: s, trackIds: eg }),
                             (null == (r = s.trailer) ? void 0 : r.isAvailable) && (0, n.jsx)(N.No, { onClick: en }),
                             (0, n.jsx)(N.C6, { disabled: !s.isAvailable, onClick: eo, variant: i.IGO.PLAYLIST }),
                             V &&
