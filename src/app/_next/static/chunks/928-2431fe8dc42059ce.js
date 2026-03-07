@@ -100,23 +100,36 @@
                             return (0, n.jsx)('div', {
                                 onWheel: K,
                                 className: (0, r.$)(x().sliderContainer, { [x().sliderContainer_focusVisible]: P }),
-                                children: (0, n.jsx)('div', {
-                                    className: x().wrapperSlider,
-                                    children: (0, n.jsx)(v.A, {
-                                        onMouseLeave: E,
-                                        className: (0, r.$)(x().slider, x().important, l),
-                                        thumbSize: 's',
-                                        onFocus: k,
-                                        onBlur: E,
-                                        trackSize: 's',
-                                        value: L,
-                                        maxValue: 1,
-                                        step: 0.01,
-                                        onChange: B,
-                                        'aria-label': N({ id: 'player-actions.volume-control' }),
-                                        ...(0, c.Am)(c.Kq.changeVolume.CHANGE_VOLUME_SLIDER),
+                                children: [
+                                    (0, n.jsx)('span', {
+                                        children: `${Math.round(L.toFixed(2) * 100)}%`,
+                                        style: {
+                                            position: 'absolute',
+                                            left: 0,
+                                            right: 0,
+                                            'margin-inline': 'auto',
+                                            width: 'fit-content',
+                                            top: '0.7rem',
+                                        },
                                     }),
-                                }),
+                                    (0, n.jsx)('div', {
+                                        className: x().wrapperSlider,
+                                        children: (0, n.jsx)(v.A, {
+                                            onMouseLeave: E,
+                                            className: (0, r.$)(x().slider, x().important, l),
+                                            thumbSize: 's',
+                                            onFocus: k,
+                                            onBlur: E,
+                                            trackSize: 's',
+                                            value: L,
+                                            maxValue: 1,
+                                            step: 0.01,
+                                            onChange: B,
+                                            'aria-label': N({ id: 'player-actions.volume-control' }),
+                                            ...(0, c.Am)(c.Kq.changeVolume.CHANGE_VOLUME_SLIDER),
+                                        }),
+                                    }),
+                                ],
                             });
                     });
                 return (0, n.jsxs)('div', {
@@ -9941,7 +9954,7 @@
                 tk = a(43350),
                 tE = a(62395),
                 tSwitch = a(61609);
-                let tj = () => {
+            let tj = () => {
                 let e = (0, tE.st)(),
                     t = (0, n.UlF)(),
                     { hash: a } = (0, tE.gf)(),
@@ -10750,10 +10763,10 @@
                             let d = null == (a = t.state) || null == (i = a.queueState) || null == (r = i.currentEntity) || null == (l = r.value) ? void 0 : l.entity,
                                 c = null == d || null == (o = d.data) ? void 0 : o.meta.r128;
                             null == r128Audio ||
-                            null == r128Audio.graphs ||
-                            r128Audio.graphs.forEach((e) => {
-                                e.setR128Gain(c, s);
-                            });
+                                null == r128Audio.graphs ||
+                                r128Audio.graphs.forEach((e) => {
+                                    e.setR128Gain(c, s);
+                                });
                         },
                         [t.state, r128Audio],
                     );
