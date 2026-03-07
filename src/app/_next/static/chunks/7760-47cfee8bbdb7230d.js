@@ -6117,14 +6117,27 @@
                     );
                 }
                 updateMetadata(e) {
-                    if (!e) return;
+                    if (!e) {
+                        window.navigator.mediaSession.metadata = null;
+                        return;
+                    }
                     let t = this.prepareMetadata(e);
                     window.navigator.mediaSession.metadata = new MediaMetadata(t);
                 }
                 handlePlayerEvents(e) {
                     let t, a;
+
+                    e.state.currentMediaPlayer?.onChange((currentPlayer) => {
+                        currentPlayer?.isCrossing.onChange((isCrossing) => {
+                            if (!isCrossing) {
+                                this.updateMetadata();
+                                this.updateMetadata(e.state.queueState.currentEntity.value?.entity.data.meta);
+                            }
+                        });
+                    });
+
                     e.state.playerState.event.onChange(() => {
-                        if (e.state.playerState.event.value === F.Iu.UPDATING_PROGRESS) {
+                        if (e.state.playerState.event.value === F.Iu.UPDATING_PROGRESS && !e.state.currentMediaPlayer?.value.isCrossing?.value) {
                             var t, a;
                             this.updateMetadata(null == (t = e.state.queueState.currentEntity.value) ? void 0 : t.entity.data.meta),
                                 ay(null == (a = e.state.queueState.currentEntity.value) ? void 0 : a.entity)
