@@ -2980,9 +2980,9 @@
 })();
 function workerLog(...args) {
     try {
-        self.postMessage({ type: 'vibe-animation-worker-log', payload: args });
-    } catch (e) {
         console.debug('[WORKER]', ...args);
+    } catch (e) {
+        // Ignore logging errors
     }
 }
 //# sourceMappingURL=worker.js.map
