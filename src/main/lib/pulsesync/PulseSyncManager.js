@@ -20,17 +20,7 @@ function getAddonContentText(ext) {
     return `${css}\n${script}`;
 }
 
-function touchesPulseSyncTitleBarBranding(ext) {
-    const source = getAddonContentText(ext);
-    if (!source.trim()) return false;
 
-    return (
-        /TitleBar[_-]pulseText/i.test(source) ||
-        /pulsesync-titlebar-force-style/i.test(source) ||
-        /PulseSync\s*\$\{\s*window\.PULSE_VERSION\s*}/i.test(source) ||
-        /PulseSync\s*\+\s*window\.PULSE_VERSION/i.test(source)
-    );
-}
 
 let singletonInstance = null;
 const PULSE_SYNC_MANAGER_KEY = Symbol.for('pulsesync.manager.instance');
@@ -387,19 +377,7 @@ class PulseSyncManager extends EventEmitter {
             }
         }
 
-        const blockedForNonPremium = [];
-        const filtered = unique.filter((ext) => {
-            if (this.isPremium) return true;
-            if (!touchesPulseSyncTitleBarBranding(ext)) return true;
-
-            const id = sanitizeId(ext.addon || ext.name);
-            blockedForNonPremium.push(id);
-            return false;
-        });
-
-        if (blockedForNonPremium.length > 0) {
-            this.logger.warn(`Blocked non-premium titlebar branding addons: ${blockedForNonPremium.join(', ')}`);
-        }
+        const filtered = unique;
 
         if (this.prevExtensions.length > 0 && JSON.stringify(this.prevExtensions) !== JSON.stringify(filtered)) {
             this.prevExtensions = filtered;
