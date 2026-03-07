@@ -93,10 +93,15 @@
                     let P = (0, l.c)(() => {
                         if (!(null == R ? void 0 : R.analyser)) return;
                         let [e, t, n] = R.analyser.getAverageFrequencies([
-                            { low: 0, high: 250 },
-                            { low: 500, high: 2e3 },
-                            { low: 2e3, high: 4e3 },
+                            { low: 0, high: 450 },
+                            { low: 400, high: 5e3 },
+                            { low: 5e3, high: 2e4 },
                         ]);
+                        let rms = R.analyser.getRMS(),
+                            rmsAlt = R.analyser.getRMSAlt(),
+                            energy = ((rms + rmsAlt) / 2) * (window.VIBE_ANIMATION_INTENSITY_COEFFICIENT?.() ?? 1) + 0.3,
+                            energyNormalized = window.VIBE_ANIMATION_USE_DYNAMIC_ENERGY?.() ? energy : (j?.entityMeta?.trackParameters?.energy ?? 1);
+                        null == d || d.updateEnergy(energyNormalized),
                         null == d || d.updateAudioFrequencies({ low: null != e ? e : 0, middle: null != t ? t : 0, high: null != n ? n : 0 });
                     });
                     (0, a.useEffect)(() => {
