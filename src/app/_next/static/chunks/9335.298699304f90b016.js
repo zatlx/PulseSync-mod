@@ -103,7 +103,7 @@
                         if (!m || d) return;
                         if (!m.transferControlToOffscreen) return void T();
                         let e = m.transferControlToOffscreen(),
-                            n = new A.a6({ offscreenCanvas: e, state: t, shaderOptions: k, onMessage: I, onError: T });
+                            n = new A.a6({ offscreenCanvas: e, state: t, shaderOptions: k, fps: window.VIBE_ANIMATION_MAX_FPS?.() ?? 25, onMessage: I, onError: T });
                         f(n), V(new A.Rv(A.p4, P)), n.applySettings({ customColors: E(r, o) });
                     }, [r, m, T, I, o, V, f, P, t, d]);
                     let S = (0, l.c)(() => {
