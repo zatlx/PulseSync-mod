@@ -6852,13 +6852,28 @@
                         var e;
                         (null == (e = u.meta) ? void 0 : e.id) && b && h && _.getLyrics(u.meta.id);
                     }, [h, b, _, null == (n = u.meta) ? void 0 : n.id]),
+                        (0, m.useEffect)(() => {
+                            let e = null == l ? void 0 : l.id,
+                                t = null == l ? void 0 : l.isAvailable,
+                                a = null == l ? void 0 : l.isLyricsAvailable,
+                                i = _.currentTrackId ? String(_.currentTrackId) : null,
+                                n = e ? String(e) : null,
+                                r = !!(_.lyrics && String(_.lyrics).trim().length > 0),
+                                o = r && (!_.currentTrackId || (n && i && n === i));
+                            if (!e || !1 === t || a || _.isLoading || o) return;
+                            _.setTrack(l), _.getLyrics(e);
+                        }, [null == l ? void 0 : l.id, null == l ? void 0 : l.isAvailable, null == l ? void 0 : l.isLyricsAvailable, _.currentTrackId, _.isLoading, _.lyrics, _]),
                         _.shouldShowErrorNotification &&
                             (c((0, d.jsx)(C.hT, { error: s({ id: 'error-messages.error-during-action' }) }), { containerId: i.uQT.ERROR }), _.resetShouldShowError());
                     let A = (0, y.c)((e) => {
                         v(e), e && l && _.sendViews({ trackId: l.id, albumId: l.albumId });
                     });
-                    return _.isShimmerVisible || !_.lyrics || u.isShimmerVisible
+                    let T = !!(_.lyrics && String(_.lyrics).trim().length > 0),
+                        I = _.isShimmerVisible || u.isShimmerVisible || (_.isLoading && !T);
+                    return I
                         ? (0, d.jsx)(D, { isShimmerActive: _.isLoading || u.isLoading })
+                        : !T
+                          ? null
                         : (0, d.jsxs)('div', {
                               className: M().root,
                               ...(0, x.Am)(x.Xk.track.TRACK_PAGE_LYRICS),
@@ -7183,7 +7198,7 @@
                                     ...(0, x.Am)(x.Xk.track.TRACK_PAGE_CONTENT),
                                     children: [
                                         (0, d.jsx)(E, { onModalClose: f }),
-                                        (null == (l = _.meta) ? void 0 : l.isLyricsAvailable) && (0, d.jsx)(K, { track: _.meta }, _.meta.id),
+                                        (((null == (l = _.meta) ? void 0 : l.isLyricsAvailable) || (null == (l = _.meta) ? void 0 : l.isAvailable)) && (0, d.jsx)(K, { track: _.meta }, _.meta.id)),
                                         N &&
                                             _.similarTracks &&
                                             (0, d.jsx)(V, {
@@ -7536,6 +7551,520 @@
                         i = parseFloat(t[1] || '0');
                     return a > 0 ? parseFloat((60 * a + i).toFixed(2)) : i;
                 },
+                parseLrc = (e) => {
+                    try {
+                        return (
+                            ((e) => {
+                                if ('string' != typeof e) throw TypeError('expect first argument to be a string');
+                                let t = e.split('\n'),
+                                    a = /\[(\d*:\d*\.?\d*)\]/,
+                                    i = new RegExp(a.source + /(.+)/.source),
+                                    n = [],
+                                    r = [],
+                                    l = { scripts: [] };
+                                for (let e = 0; e < t.length; e++) {
+                                    let a = t[e];
+                                    if (a && !1 === i.test(a)) n.push(a);
+                                    else break;
+                                }
+                                n.reduce((e, t) => {
+                                    let a = t.trim().slice(1, -1).split(': '),
+                                        i = a[0],
+                                        n = a[1];
+                                    return void 0 !== i && (e[i] = n), e;
+                                }, l),
+                                    t.splice(0, n.length);
+                                let s = 0;
+                                let c = l.offset;
+                                if (!c) {
+                                    let t = /\[offset\s*:\s*([+-]?\d+(?:\.\d+)?)\]/i.exec(e);
+                                    t && (c = t[1]);
+                                }
+                                if (c) {
+                                    let e = parseFloat(c);
+                                    Number.isNaN(e) || (s = e / 1e3);
+                                }
+                                let o = new RegExp(''.concat(i.source, '|').concat(a.source));
+                                t = t.filter((e) => e && o.test(e));
+                                for (let e = 0, n = t.length; e < n; e++) {
+                                    let l = t[e],
+                                        o = e + 1 < n ? t[e + 1] : null;
+                                    if (l) {
+                                        let e = i.exec(l),
+                                            t = o ? a.exec(o) : null;
+                                        if (e) {
+                                            let [, a, i] = e,
+                                                n = null == t ? void 0 : t[1];
+                                            if (a) {
+                                                let e = j(a),
+                                                    t = j(n);
+                                                'number' == typeof e && (e += s);
+                                                'number' == typeof t && (t += s);
+                                                r.push({ start: e, text: i || '', end: t });
+                                            }
+                                        }
+                                    }
+                                }
+                                return (l.scripts = r), l;
+                            })(e).scripts || []
+                        ).map((e) => {
+                            let { start: t, end: a, text: i } = e;
+                            return (0, l.wg)({ text: i.trim(), fromSec: t, toSec: a });
+                        });
+                    } catch (e) {
+                        return [];
+                    }
+                },
+                normalizeSyncedTiming = (e, t) => {
+                    if (!Array.isArray(e) || !e.length || !t || t <= 0) return e;
+                    let a = e.at(-1),
+                        i = null == a ? void 0 : a.toSec,
+                        n = 'number' == typeof i ? i : null == a ? void 0 : a.fromSec;
+                    if ('number' != typeof n) return e;
+                    if (n <= t + 1) return e;
+                    let r = t - n;
+                    return e.map((e) => {
+                        let t = 'number' == typeof e.fromSec ? Math.max(0, e.fromSec + r) : e.fromSec,
+                            a = 'number' == typeof e.toSec ? Math.max(0, e.toSec + r) : e.toSec;
+                        return (0, l.wg)({ text: e.text, fromSec: t, toSec: a });
+                    });
+                },
+                lrclibQueue = (() => {
+                    let e = Promise.resolve(),
+                        t = 0,
+                        a = 350,
+                        i = 0;
+                    let n = (n) => {
+                        let r = i;
+                        let l = e.then(async () => {
+                            if (r !== i) return;
+                            let e = Date.now(),
+                                l = a - (e - t);
+                            l > 0 && (await new Promise((e) => setTimeout(e, l)));
+                            if (r !== i) return;
+                            return (t = Date.now()), n();
+                        });
+                        return (e = l.catch(() => {})), l;
+                    };
+                    return (
+                        (n.reset = () => {
+                            (i += 1), (t = 0), (e = Promise.resolve());
+                        }),
+                        n
+                    );
+                })(),
+                lrclibSyncPrefetchByTrackId = new Map(),
+                lrclibSyncPrefetchNoResultByTrackId = new Map(),
+                lrclibSyncPrefetchInFlight = new Map(),
+                LRCLIB_SYNC_PREFETCH_NO_RESULT_TTL_MS = 18e5,
+                getNextQueueTrackMeta = (e) => {
+                    try {
+                        if (!(null == e ? void 0 : e.state)) return logSyncPrefetch('next-miss', { reason: 'sonata-state' }), null;
+                        let t = null == e ? void 0 : e.state.queueState.index.value,
+                            a = null == e ? void 0 : e.state.queueState.order.value,
+                            i = null == e ? void 0 : e.state.queueState.entityList.value;
+                        if (!Array.isArray(i)) return logSyncPrefetch('next-miss', { reason: 'entityList' }), null;
+                        let n = null;
+                        if (Array.isArray(a) && 'number' == typeof t) {
+                            n = a[t + 1];
+                            logSyncPrefetch('next-from-order', { queueIndex: t, nextIndex: n });
+                        }
+                        if ('number' != typeof n) return logSyncPrefetch('next-miss', { reason: 'nextIndex' }), null;
+                        let r = i[n];
+                        if (!(r && !(0, f.Re)(r) && r.entity)) return logSyncPrefetch('next-miss', { reason: 'entityAtIndex', nextIndex: n }), null;
+                        let l = (0, I.pE)(r.entity);
+                        return logSyncPrefetch('next-hit', { nextIndex: n, trackId: null == l ? void 0 : l.id }), l;
+                    } catch (e) {
+                        logSyncPrefetch('next-error', { error: null == e ? void 0 : e.message });
+                        return null;
+                    }
+                },
+                lrclibSyncSearchToken = 0,
+                lrclibSyncControllers = [],
+                LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE = 500,
+                LRCLIB_SYNC_SEARCH_CACHE_TTL_MS = 36e5,
+                LRCLIB_SYNC_SEARCH_NO_RESULT_TTL_MS = 18e5,
+                lrclibSyncSearchResultCache = new Map(),
+                lrclibSyncSearchNoResultCache = new Map(),
+                lrclibSyncSearchInFlightByKey = new Map(),
+                normalizeLrclibSyncCachePart = (e) =>
+                    'string' == typeof e
+                        ? e
+                              .trim()
+                              .toLowerCase()
+                              .replace(/[\s\W_]+/g, '')
+                        : '',
+                makeLrclibSyncCacheKey = (e) => {
+                    let t = normalizeLrclibSyncCachePart(null == e ? void 0 : e.trackName),
+                        a = normalizeLrclibSyncCachePart(null == e ? void 0 : e.artistName),
+                        i = null == e ? void 0 : e.duration;
+                    return ''.concat(t, '|').concat(a, '|').concat('number' == typeof i && i > 0 ? i : '');
+                },
+                readLrclibSyncCache = (e, t) => {
+                    let a = e.get(t);
+                    if (!a) return null;
+                    if (a.expiresAt <= Date.now()) return e.delete(t), null;
+                    return e.delete(t), e.set(t, a), a.value;
+                },
+                writeLrclibSyncCache = (e, t, a, i, n) => {
+                    let r = { value: a, expiresAt: Date.now() + i };
+                    e.delete(t), e.set(t, r);
+                    for (; e.size > n; ) {
+                        let t = e.keys().next();
+                        if (t.done) break;
+                        e.delete(t.value);
+                    }
+                },
+                getSyncTrackLookup = (e) => {
+                    if (!e) return null;
+                    let t = null == e ? void 0 : e.title,
+                        a = null == e ? void 0 : e.name,
+                        i = null == e ? void 0 : e.artists,
+                        n = (null == i ? void 0 : i.length) ? i.map((e) => e.name).filter(Boolean) : [],
+                        r = n.length > 0 ? n[0] : null,
+                        l = null == e ? void 0 : e.durationMs,
+                        o = l ? Math.round(l / 1e3) : null,
+                        s = null == e ? void 0 : e.duration,
+                        c = t || a,
+                        d = null == e ? void 0 : e.version,
+                        u = null == e ? void 0 : e.trackSource,
+                        m = null == e ? void 0 : e.ugcArtistName;
+                    return r || (r = m || null), c && d && 'UGC' !== u && 'string' == typeof d && !/^https?:\/\//.test(d) && (c = ''.concat(c, ' ').concat(d)), c ? { trackName: c, artistName: r, duration: o || s } : null;
+                },
+                lrclibSyncPrefetchRetryTimer = null,
+                lrclibSyncPrefetchSeq = 0,
+                lrclibSyncSonataStateRef = null,
+                logSyncPrefetch = (e, t) => {
+                    try {
+                        console.debug('[LRCLib] sync prefetch '.concat(e), t);
+                    } catch (e) {}
+                },
+                fetchLrclibLyrics = async (e) => {
+                    let { trackName: trackName, artistName: artistName, duration: durationSec } = e || {};
+                    if (!trackName) return null;
+                    let cacheKey = makeLrclibSyncCacheKey({ trackName, artistName, duration: durationSec }),
+                        cachedResult = readLrclibSyncCache(lrclibSyncSearchResultCache, cacheKey);
+                    if (cachedResult) return cachedResult;
+                    if (readLrclibSyncCache(lrclibSyncSearchNoResultCache, cacheKey)) return null;
+                    let inFlightSearch = lrclibSyncSearchInFlightByKey.get(cacheKey);
+                    if (inFlightSearch) return inFlightSearch;
+                    let searchPromise = (async () => {
+                        let searchToken = ++lrclibSyncSearchToken;
+                        let checkToken = () => !1;
+
+                        try {
+                            let useText = 'undefined' != typeof window && window.nativeSettings ? window.nativeSettings.get('modSettings.lrclib.useText') : null;
+                            if (useText === !1) return null;
+                        } catch (e) {}
+
+                        try {
+                            console.debug('[LRCLib] sync search', { trackName: trackName, artistName: artistName, duration: durationSec });
+                        } catch (e) {}
+
+                        let allowTitleOnlyFallback = !0;
+                        try {
+                            let setting =
+                                'undefined' != typeof window && window.nativeSettings ? window.nativeSettings.get('modSettings.lrclib.useTitleOnlyFallback') : null;
+                            if ('boolean' == typeof setting) allowTitleOnlyFallback = setting;
+                        } catch (e) {}
+
+                        let retryIfAborted = async (attempt, ...args) => {
+                            if (attempt && attempt.aborted && checkToken() === !1) {
+                                let retry = await fetchResults(...args);
+                                return retry || attempt;
+                            }
+                            return attempt;
+                        };
+
+                        let fetchResults = async (trackQuery, artistQuery) => {
+                                let requestUrl = 'https://lrclib.net/api/search?track_name='.concat(encodeURIComponent(trackQuery));
+                                if (artistQuery) requestUrl = requestUrl.concat('&artist_name=', encodeURIComponent(artistQuery));
+                                return lrclibQueue(async () => {
+                                    let controller = new AbortController(),
+                                        timeoutId = setTimeout(() => controller.abort(), 1e4);
+                                    try {
+                                        lrclibSyncControllers.push(controller);
+                                    } catch (e) {}
+                                    try {
+                                        let response = await fetch(requestUrl, { signal: controller.signal });
+                                        if (!response.ok) return { items: null, aborted: !1 };
+                                        let payload = await response.json();
+                                        console.debug(
+                                            '[LRCLib] fetch response',
+                                            Array.isArray(payload)
+                                                ? payload.map((e) => {
+                                                      let t = e?.syncedLyrics ? parseLrc(e.syncedLyrics) : [];
+                                                      return t.find((e) => 'number' == typeof e.fromSec)?.fromSec ?? null;
+                                                  })
+                                                : [],
+                                        );
+                                        console.debug('[LRCLib] sync response', { count: Array.isArray(payload) ? payload.length : 0 });
+                                        return { items: Array.isArray(payload) && payload.length ? payload : null, aborted: !1 };
+                                    } catch (error) {
+                                        let aborted = error?.name === 'AbortError';
+                                        aborted ? console.debug('[LRCLib] sync request aborted') : console.debug('[LRCLib] sync request failed', error);
+                                        return { items: null, aborted };
+                                    } finally {
+                                        try {
+                                            lrclibSyncControllers = lrclibSyncControllers.filter((e) => e !== controller);
+                                        } catch (e) {}
+                                        clearTimeout(timeoutId);
+                                    }
+                                });
+                            },
+                            normalizeTitle = (e) => ('string' != typeof e ? '' : e.toLowerCase().replace(/[\s\W_]+/g, '')),
+                            splitTrackTitle = (e) => {
+                                if ('string' != typeof e) return null;
+                                let separators = [' - ', ' — ', ' – '];
+                                for (let sep of separators) {
+                                    if (e.includes(sep)) {
+                                        let parts = e.split(sep),
+                                            left = parts[0]?.trim() || '',
+                                            right = parts.slice(1).join(sep).trim();
+                                        if (left && right) return { left, right };
+                                    }
+                                }
+                                return null;
+                            },
+                            getTitleVariants = (e) => {
+                                let t = [];
+                                if ('string' == typeof e) {
+                                    let a = e.trim();
+                                    if (a) {
+                                        t.push(a);
+                                        let split = splitTrackTitle(a);
+                                        if (split) {
+                                            split.left && t.push(split.left);
+                                            split.right && t.push(split.right);
+                                        }
+                                    }
+                                }
+                                return t;
+                            };
+                        let normalizedTitles = allowTitleOnlyFallback ? getTitleVariants(trackName).map(normalizeTitle).filter(Boolean) : [];
+
+                        let baseTrackName = trackName,
+                            baseArtistName = artistName;
+
+                        try {
+                            let artistAttempt = baseTrackName && baseArtistName ? await fetchResults(baseTrackName, baseArtistName) : null;
+                            if (checkToken()) return null;
+                            artistAttempt = await retryIfAborted(artistAttempt, baseTrackName, baseArtistName);
+                            if (checkToken()) return null;
+
+                            let resultsWithArtist = artistAttempt && artistAttempt.items ? artistAttempt.items : null;
+                            let usedLooseQuery = !1;
+                            let fallbackAttempt = resultsWithArtist || !baseTrackName || !allowTitleOnlyFallback ? null : await fetchResults(baseTrackName);
+                            if (checkToken()) return null;
+                            fallbackAttempt = await retryIfAborted(fallbackAttempt, baseTrackName);
+                            if (checkToken()) return null;
+
+                            let results = resultsWithArtist || (fallbackAttempt && fallbackAttempt.items ? fallbackAttempt.items : null);
+                            if (checkToken()) return null;
+                            if (!resultsWithArtist && fallbackAttempt && fallbackAttempt.items) usedLooseQuery = !0;
+
+                            if (!results && trackName) {
+                                let splitInfo = splitTrackTitle(trackName);
+                                if (splitInfo) {
+                                    if (!results && splitInfo.right && splitInfo.left) {
+                                        let splitAttempt = await fetchResults(splitInfo.right, splitInfo.left);
+                                        if (checkToken()) return null;
+                                        splitAttempt = await retryIfAborted(splitAttempt, splitInfo.right, splitInfo.left);
+                                        if (checkToken()) return null;
+                                        results = splitAttempt && splitAttempt.items ? splitAttempt.items : null;
+                                    }
+
+                                    if (!results && splitInfo.right && allowTitleOnlyFallback) {
+                                        let splitFallback = await fetchResults(splitInfo.right);
+                                        if (checkToken()) return null;
+                                        splitFallback = await retryIfAborted(splitFallback, splitInfo.right);
+                                        if (checkToken()) return null;
+                                        results = splitFallback && splitFallback.items ? splitFallback.items : null;
+                                    }
+
+                                    if (!results && splitInfo.left && splitInfo.right) {
+                                        let reverseAttempt = await fetchResults(splitInfo.left, splitInfo.right);
+                                        if (checkToken()) return null;
+                                        reverseAttempt = await retryIfAborted(reverseAttempt, splitInfo.left, splitInfo.right);
+                                        if (checkToken()) return null;
+                                        results = reverseAttempt && reverseAttempt.items ? reverseAttempt.items : null;
+                                    }
+
+                                    if (!results && splitInfo.left && allowTitleOnlyFallback) {
+                                        let reverseFallback = await fetchResults(splitInfo.left);
+                                        if (checkToken()) return null;
+                                        reverseFallback = await retryIfAborted(reverseFallback, splitInfo.left);
+                                        if (checkToken()) return null;
+                                        results = reverseFallback && reverseFallback.items ? reverseFallback.items : null;
+                                        if (results) usedLooseQuery = !0;
+                                    }
+                                }
+                            }
+                            if (!results)
+                                return (
+                                    writeLrclibSyncCache(
+                                        lrclibSyncSearchNoResultCache,
+                                        cacheKey,
+                                        !0,
+                                        LRCLIB_SYNC_SEARCH_NO_RESULT_TTL_MS,
+                                        LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE,
+                                    ),
+                                    null
+                                );
+
+                            if (usedLooseQuery && normalizedTitles.length > 0) {
+                                results = results.filter((e) => normalizedTitles.includes(normalizeTitle(e.trackName || e.track_name || e.title || e.name)));
+                            }
+
+                            if (usedLooseQuery && baseArtistName) {
+                                let normalizeArtist = (e) => ('string' != typeof e ? '' : e.toLowerCase().replace(/[\s\W_]+/g, ''));
+                                let expectedArtist = normalizeArtist(baseArtistName);
+                                let artistMatches = results.filter((e) => {
+                                    let artistStr =
+                                        e.artistName || e.artist_name || e.artist || (Array.isArray(e.artists) ? e.artists.map((e) => e?.name || '').join(' ') : '');
+                                    let normalizedArtist = normalizeArtist(artistStr);
+                                    return (
+                                        normalizedArtist &&
+                                        (normalizedArtist === expectedArtist || normalizedArtist.includes(expectedArtist) || expectedArtist.includes(normalizedArtist))
+                                    );
+                                });
+                                if (artistMatches.length > 0) results = artistMatches;
+                            }
+
+                            results = results.filter((e) => !e.instrumental);
+                            if (!results.length)
+                                return (
+                                    writeLrclibSyncCache(
+                                        lrclibSyncSearchNoResultCache,
+                                        cacheKey,
+                                        !0,
+                                        LRCLIB_SYNC_SEARCH_NO_RESULT_TTL_MS,
+                                        LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE,
+                                    ),
+                                    null
+                                );
+
+                            console.debug('[LRCLib] sync filtered', { count: results.length, usedArtist: !usedLooseQuery });
+
+                            let scoreSynced = (e) => {
+                                if (!e || !e.syncedLyrics) return null;
+                                let lines = parseLrc(e.syncedLyrics);
+                                if (!lines.length) return null;
+                                let textLines = lines.filter((e) => e && e.text && e.text.trim().length > 0);
+                                let activeLines = textLines.length ? textLines : lines;
+                                let startSec = activeLines[0] && activeLines[0].fromSec ? activeLines[0].fromSec : null;
+                                let endInfo = activeLines.length > 0 ? activeLines[activeLines.length - 1] : null;
+                                let endSec = endInfo && endInfo.toSec ? endInfo.toSec : endInfo && endInfo.fromSec ? endInfo.fromSec : null;
+                                if ('number' != typeof startSec || 'number' != typeof endSec) return null;
+
+                                let score = 0;
+                                if (durationSec && durationSec > 0) {
+                                    let lyricsRange = Math.max(0, endSec - startSec);
+                                    let coverage = Math.min(1, lyricsRange / durationSec);
+                                    let endPenalty = Math.abs(durationSec - endSec);
+                                    let startPenalty = startSec < 0 ? Math.min(30, Math.abs(startSec)) : startSec > 20 ? Math.min(10, (startSec - 20) / 2) : 0;
+                                    let overflowPenalty = endSec > durationSec ? Math.min(30, endSec - durationSec) : 0;
+                                    score += 120 * coverage - endPenalty - startPenalty - overflowPenalty;
+                                    if (coverage < 0.6) score -= 20 * (0.6 - coverage);
+                                }
+                                if (startSec >= 0) {
+                                    let startBonus = Math.max(0, 20 - 4 * startSec);
+                                    if (startSec > 2) startBonus -= Math.min(10, 2 * (startSec - 2));
+                                    score += startBonus;
+                                }
+                                if (activeLines.length > 1) {
+                                    let intervals = activeLines
+                                        .slice(1)
+                                        .map((e, i) => e.fromSec - activeLines[i].fromSec)
+                                        .filter((i) => i >= 0);
+                                    if (intervals.length) {
+                                        let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                                        if (avgInterval > 8) score -= Math.min(20, avgInterval);
+                                    }
+                                }
+                                return score + Math.min(30, activeLines.length / 2);
+                            };
+
+                            let pickBestSynced = (items) => {
+                                let scored = items
+                                    .map((e) => ({ item: e, score: scoreSynced(e) }))
+                                    .filter((e) => e.score != null)
+                                    .sort((a, b) => b.score - a.score);
+                                return scored[0] && scored[0].item ? scored[0].item : null;
+                            };
+
+                            if (durationSec && durationSec > 0) {
+                                let withDuration = results.filter((e) => 'number' == typeof e.duration);
+                                if (withDuration.length > 0) {
+                                    let closeMatches = withDuration.filter((e) => Math.abs(e.duration - durationSec) <= 10);
+                                    if (!closeMatches.length)
+                                        return (
+                                            writeLrclibSyncCache(
+                                                lrclibSyncSearchNoResultCache,
+                                                cacheKey,
+                                                !0,
+                                                LRCLIB_SYNC_SEARCH_NO_RESULT_TTL_MS,
+                                                LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE,
+                                            ),
+                                            null
+                                        );
+                                    results = closeMatches;
+                                }
+                            }
+
+                            let selected = pickBestSynced(results) || results[0];
+
+                            if (durationSec && durationSec > 0) {
+                                let exactMatches = results.filter((e) => e.duration == durationSec);
+                                if (exactMatches.length > 0) {
+                                    selected = pickBestSynced(exactMatches) || exactMatches[0];
+                                }
+                            }
+
+                            if (!selected || !selected.syncedLyrics) {
+                                let syncedOptions = results.filter((e) => e && e.syncedLyrics);
+                                if (syncedOptions.length > 0) {
+                                    let finalBest = syncedOptions[0];
+                                    if (durationSec && durationSec > 0) {
+                                        let byDuration = syncedOptions
+                                            .map((e) => ({ item: e, delta: Math.abs(e.duration - durationSec) }))
+                                            .sort((a, b) => a.delta - b.delta);
+                                        finalBest = byDuration[0] && byDuration[0].item ? byDuration[0].item : finalBest;
+                                    }
+                                    selected = finalBest;
+                                }
+                            }
+
+                            if (!selected || !selected.syncedLyrics)
+                                return (
+                                    writeLrclibSyncCache(
+                                        lrclibSyncSearchNoResultCache,
+                                        cacheKey,
+                                        !0,
+                                        LRCLIB_SYNC_SEARCH_NO_RESULT_TTL_MS,
+                                        LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE,
+                                    ),
+                                    null
+                                );
+                            lrclibSyncSearchNoResultCache.delete(cacheKey),
+                                writeLrclibSyncCache(lrclibSyncSearchResultCache, cacheKey, selected, LRCLIB_SYNC_SEARCH_CACHE_TTL_MS, LRCLIB_SYNC_SEARCH_CACHE_MAX_SIZE);
+                            console.debug('[LRCLib] sync selected', {
+                                id: selected?.id,
+                                duration: selected?.duration,
+                                hasSynced: !!selected?.syncedLyrics,
+                            });
+                            return selected;
+                        } catch (e) {
+                            console.debug('[LRCLib] sync search failed', e);
+                            return null;
+                        }
+                    })();
+                    lrclibSyncSearchInFlightByKey.set(cacheKey, searchPromise);
+                    searchPromise.finally(() => {
+                        lrclibSyncSearchInFlightByKey.get(cacheKey) === searchPromise && lrclibSyncSearchInFlightByKey.delete(cacheKey);
+                    });
+                    return searchPromise;
+                },
                 L = l.gK.model('SyncLyricsLine', { text: l.gK.string, fromSec: l.gK.number, toSec: l.gK.maybe(l.gK.number) }).views((e) => ({
                     get key() {
                         return ''.concat(e.fromSec, ':').concat(e.toSec);
@@ -7555,6 +8084,7 @@
                         }),
                         A.XT,
                     )
+                    .volatile(() => ({ requestToken: 0 }))
                     .views((e) => ({
                         get startSec() {
                             var t;
@@ -7574,130 +8104,197 @@
                             var n;
                             return !!(e.isResolved && (null == (n = e.lines) ? void 0 : n.length) === 0);
                         },
+                        hasLyricsForTrack(t) {
+                            let a = null == t ? null : String(t),
+                                i = null == e.currentTrackId ? null : String(e.currentTrackId);
+                            return !!(a && i && a === i && e.isResolved && Array.isArray(e.lines) && e.lines.length > 0);
+                        },
+                        isLoadingForTrack(t) {
+                            let a = null == t ? null : String(t),
+                                i = null == e.currentTrackId ? null : String(e.currentTrackId);
+                            return !!(a && i && a === i && e.isLoading);
+                        },
                     }))
                     .actions((e) => {
-                        let t = {
-                            setVisible() {
-                                e.isVisible = !0;
-                            },
-                            setInvisible() {
-                                e.isVisible = !1;
-                            },
-                            getActiveLineIndex: (t) => {
-                                if ((e.startSec && t < e.startSec) || (e.endSec && t > e.endSec)) return null;
-                                let a = (e.lines || []).findIndex((e) => (void 0 === e.toSec ? t >= e.fromSec : !!(t >= e.fromSec) && !!(e.toSec >= t)));
-                                return a >= 0 ? a : null;
-                            },
-                            getData: (0, l.L3)(function* (a) {
-                                let { tracksResource: i, modelActionsLogger: r } = (0, l._$)(e);
-                                if (a)
-                                    try {
-                                        e.loadingState = n.GuX.PENDING;
-                                        let { downloadUrl: r, major: o, externalLyricId: s, lyricId: c, writers: d } = yield i.getLyrics((0, k.h3)(a, P.o.LRC));
-                                        (e.major = (0, E.LT)(o)),
-                                            (e.externalLyricId = s),
-                                            (e.lyricId = c),
-                                            (e.writers = (0, l.wg)(d)),
-                                            (e.currentTrackId = a),
-                                            (e.hasLyricsViewed = !1),
-                                            yield t.downloadSyncLyrics(r),
-                                            (e.loadingState = n.GuX.RESOLVE);
-                                    } catch (t) {
-                                        (e.loadingState = n.GuX.REJECT), r.error(t);
+                        let isStale = (t, a) => t !== e.requestToken || String(e.currentTrackId) !== String(a),
+                            t = {
+                                setVisible() {
+                                    e.isVisible = !0;
+                                },
+                                setInvisible() {
+                                    e.isVisible = !1;
+                                },
+                                getActiveLineIndex: (t) => {
+                                    if ((e.startSec && t < e.startSec) || (e.endSec && t > e.endSec)) return null;
+                                    let a = (e.lines || []).findIndex((e) => (void 0 === e.toSec ? t >= e.fromSec : !!(t >= e.fromSec) && !!(e.toSec >= t)));
+                                    return a >= 0 ? a : null;
+                                },
+                                prefetchTrack: (0, l.L3)(function* (trackMeta, a = 0) {
+                                    let i = ++lrclibSyncPrefetchSeq,
+                                        n = trackMeta || getNextQueueTrackMeta(lrclibSyncSonataStateRef);
+                                    if ((logSyncPrefetch('start', { prefetchId: i, retry: a, explicitTrackId: null == trackMeta ? void 0 : trackMeta.id }), !n)) {
+                                        if (a >= 6) return void logSyncPrefetch('stop-no-next', { prefetchId: i, retry: a });
+                                        return (
+                                            lrclibSyncPrefetchRetryTimer && clearTimeout(lrclibSyncPrefetchRetryTimer),
+                                            logSyncPrefetch('retry-scheduled', { prefetchId: i, retry: a + 1 }),
+                                            void (lrclibSyncPrefetchRetryTimer = setTimeout(() => {
+                                                lrclibSyncPrefetchRetryTimer = null;
+                                                try {
+                                                    t.prefetchTrack(getNextQueueTrackMeta(lrclibSyncSonataStateRef), a + 1);
+                                                } catch (e) {}
+                                            }, 250 * (a + 1)))
+                                        );
                                     }
-                            }),
-                            downloadSyncLyrics: (0, l.L3)(function* (t) {
-                                let { prefixlessResource: a } = (0, l._$)(e),
-                                    i = yield a.getLyricsText(t);
-                                e.lines = (0, l.wg)(
-                                    ((e) => {
-                                        try {
+                                    let r = null == n ? void 0 : n.id,
+                                        o = null == r ? null : String(r);
+                                    if (!o) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'track-id' });
+                                    let s = !!(null != n && !0 === n.hasSyncLyrics) || !!(null != n && !0 === n.isSyncLyricsAvailable) || !!(null != n && !0 === n.isSyncLyricsAvailableWithOfflineFeature);
+                                    if (s) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'native-sync-available', trackId: o });
+                                    if (lrclibSyncPrefetchByTrackId.has(o)) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'cached', trackId: o });
+                                    let c = lrclibSyncPrefetchNoResultByTrackId.get(o);
+                                    if ('number' == typeof c) {
+                                        let e = Date.now() - c;
+                                        if (e < LRCLIB_SYNC_PREFETCH_NO_RESULT_TTL_MS)
+                                            return void logSyncPrefetch('skip', { prefetchId: i, reason: 'no-result-cached', trackId: o, ageMs: e });
+                                        lrclibSyncPrefetchNoResultByTrackId.delete(o);
+                                    }
+                                    if (lrclibSyncPrefetchInFlight.has(o)) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'inflight', trackId: o });
+                                    if (String(o) === String(e.currentTrackId)) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'current-track', trackId: o });
+                                    let d = getSyncTrackLookup(n);
+                                    if (!(null == d ? void 0 : d.trackName)) return void logSyncPrefetch('skip', { prefetchId: i, reason: 'lookup-missing', trackId: o });
+                                    logSyncPrefetch('fetch-start', { prefetchId: i, trackId: o, trackName: d.trackName, artistName: d.artistName, duration: d.duration });
+                                    let u = fetchLrclibLyrics(d)
+                                        .then((e) => {
+                                            let t = !!(e && e.syncedLyrics);
+                                            return t ? (lrclibSyncPrefetchByTrackId.set(o, e), lrclibSyncPrefetchNoResultByTrackId.delete(o)) : lrclibSyncPrefetchNoResultByTrackId.set(o, Date.now()), logSyncPrefetch('fetch-done', { prefetchId: i, trackId: o, hasResult: !!e, hasSynced: t }), e;
+                                        })
+                                        .catch((e) => (logSyncPrefetch('fetch-error', { prefetchId: i, trackId: o, error: null == e ? void 0 : e.message }), null))
+                                        .finally(() => {
+                                            lrclibSyncPrefetchInFlight.delete(o);
+                                        });
+                                    lrclibSyncPrefetchInFlight.set(o, u), yield u;
+                                }),
+                                getData: (0, l.L3)(function* (a) {
+                                    let { tracksResource: i, modelActionsLogger: r } = (0, l._$)(e);
+                                    if (!a) return;
+                                    if (e.isLoading && String(e.currentTrackId) === String(a)) return;
+                                    let o = ++e.requestToken;
+                                    try {
+                                        (e.loadingState = n.GuX.PENDING), (e.currentTrackId = a), (e.hasLyricsViewed = !1), (e.lines = null);
+                                        let { sonataState: s } = (0, l.Zn)(e),
+                                            c = null == s ? void 0 : s.entityMeta;
+                                        if (null == c ? void 0 : c.hasSyncLyrics) {
+                                            let { downloadUrl: s, major: d, externalLyricId: u, lyricId: m, writers: _ } = yield i.getLyrics((0, k.h3)(a, P.o.LRC));
+                                            if (isStale(o, a)) return;
+                                            if (!s) throw new Error('Sync lyrics are not available');
+                                            let p = yield t.downloadSyncLyrics(s, o, a);
+                                            if (isStale(o, a)) return;
+                                            if (!(null == p ? void 0 : p.length)) throw new Error('Sync lyrics are not available');
                                             return (
-                                                ((e) => {
-                                                    if ('string' != typeof e) throw TypeError('expect first argument to be a string');
-                                                    let t = e.split('\n'),
-                                                        a = /\[(\d*:\d*\.?\d*)\]/,
-                                                        i = new RegExp(a.source + /(.+)/.source),
-                                                        n = [],
-                                                        r = [],
-                                                        l = { scripts: [] };
-                                                    for (let e = 0; e < t.length; e++) {
-                                                        let a = t[e];
-                                                        if (a && !1 === i.test(a)) n.push(a);
-                                                        else break;
-                                                    }
-                                                    n.reduce((e, t) => {
-                                                        let a = t.trim().slice(1, -1).split(': '),
-                                                            i = a[0],
-                                                            n = a[1];
-                                                        return void 0 !== i && (e[i] = n), e;
-                                                    }, l),
-                                                        t.splice(0, n.length);
-                                                    let o = new RegExp(''.concat(i.source, '|').concat(a.source));
-                                                    t = t.filter((e) => e && o.test(e));
-                                                    for (let e = 0, n = t.length; e < n; e++) {
-                                                        let l = t[e],
-                                                            o = e + 1 < n ? t[e + 1] : null;
-                                                        if (l) {
-                                                            let e = i.exec(l),
-                                                                t = o ? a.exec(o) : null;
-                                                            if (e) {
-                                                                let [, a, i] = e,
-                                                                    n = null == t ? void 0 : t[1];
-                                                                a && r.push({ start: j(a), text: i || '', end: j(n) });
-                                                            }
-                                                        }
-                                                    }
-                                                    return (l.scripts = r), l;
-                                                })(e).scripts || []
-                                            ).map((e) => {
-                                                let { start: t, end: a, text: i } = e;
-                                                return (0, l.wg)({ text: i.trim(), fromSec: t, toSec: a });
-                                            });
-                                        } catch (e) {
-                                            return [];
+                                                (e.major = (0, E.LT)(d)),
+                                                (e.externalLyricId = u),
+                                                (e.lyricId = m),
+                                                (e.writers = (0, l.wg)(null != _ ? _ : [])),
+                                                (e.lines = (0, l.wg)(p)),
+                                                logSyncPrefetch('trigger-from-getData', { reason: 'resolved-native', trackId: a }),
+                                                void (e.loadingState = n.GuX.RESOLVE)
+                                            );
                                         }
-                                    })(i),
-                                );
-                            }),
-                            sendViews: (0, l.L3)(function* (t) {
-                                let { contextId: a, contextType: i } = t,
-                                    { lyricViewsResource: r, modelActionsLogger: o } = (0, l._$)(e);
-                                if (e.loadingState === n.GuX.RESOLVE)
-                                    try {
-                                        if (!e.major || !e.lyricId || !e.externalLyricId || !e.currentTrackId) return;
-                                        yield r.sendViews({
-                                            lyricViews: [
-                                                {
-                                                    id: (0, T.A)(),
-                                                    trackId: e.currentTrackId,
-                                                    majorId: e.major.id,
-                                                    lyricId: e.lyricId,
-                                                    externalLyricId: e.externalLyricId,
-                                                    lyricFormat: P.o.LRC,
-                                                    albumId: i === N.K.Album && a ? a : void 0,
-                                                    playlistId: i === N.K.Playlist && a ? a : void 0,
-                                                },
-                                            ],
-                                        }),
-                                            (e.hasLyricsViewed = !0);
-                                    } catch (e) {
-                                        o.error(e);
+                                        throw new Error('Sync lyrics are not available');
+                                    } catch (m) {
+                                        let { sonataState: i } = (0, l.Zn)(e),
+                                            r = null == i ? void 0 : i.entityMeta,
+                                            s = getSyncTrackLookup(r),
+                                            c = null == a ? null : String(a),
+                                            d = c && lrclibSyncPrefetchByTrackId.has(c) ? lrclibSyncPrefetchByTrackId.get(c) : null;
+                                        if (!d) {
+                                            let e = c ? lrclibSyncPrefetchNoResultByTrackId.get(c) : null;
+                                            if ('number' == typeof e) {
+                                                if (Date.now() - e < LRCLIB_SYNC_PREFETCH_NO_RESULT_TTL_MS) {
+                                                    logSyncPrefetch('fallback-skip', { reason: 'no-result-cached', trackId: c });
+                                                } else lrclibSyncPrefetchNoResultByTrackId.delete(c);
+                                            }
+                                            if (!d && (null == s ? void 0 : s.trackName) && !('number' == typeof e && Date.now() - e < LRCLIB_SYNC_PREFETCH_NO_RESULT_TTL_MS)) d = yield fetchLrclibLyrics(s);
+                                        }
+                                        if (isStale(o, a)) return;
+                                        if (!d)
+                                            return void ((e.loadingState = n.GuX.REJECT), c && lrclibSyncPrefetchNoResultByTrackId.set(c, Date.now()), logSyncPrefetch('trigger-from-getData', { reason: 'reject-no-fallback', trackId: a }), r.error(m));
+                                        c && (null != d && d.syncedLyrics ? (lrclibSyncPrefetchByTrackId.set(c, d), lrclibSyncPrefetchNoResultByTrackId.delete(c)) : lrclibSyncPrefetchNoResultByTrackId.set(c, Date.now()));
+                                        if (null != d && d.syncedLyrics) {
+                                            let i = normalizeSyncedTiming(parseLrc(d.syncedLyrics), null == s ? void 0 : s.duration);
+                                            if (i.length > 0)
+                                                return (
+                                                    (e.major = (0, E.LT)({ id: 1337, name: 'LRCLIB', prettyName: 'LRCLIB' })),
+                                                    (e.externalLyricId = null == d.id ? null : String(d.id)),
+                                                    (e.lyricId = null),
+                                                    (e.writers = (0, l.wg)((null == r ? void 0 : r.artists) ? r.artists.map((e) => e.name).filter(Boolean) : [])),
+                                                    (e.hasLyricsViewed = !0),
+                                                    (e.lines = (0, l.wg)(i)),
+                                                    logSyncPrefetch('trigger-from-getData', { reason: 'resolved-lrclib', trackId: a }),
+                                                    void (e.loadingState = n.GuX.RESOLVE)
+                                                );
+                                        }
+                                        (e.loadingState = n.GuX.REJECT), c && lrclibSyncPrefetchNoResultByTrackId.set(c, Date.now()), logSyncPrefetch('trigger-from-getData', { reason: 'reject-without-lines', trackId: a }), r.error(m);
                                     }
-                            }),
-                        };
+                                }),
+                                downloadSyncLyrics: (0, l.L3)(function* (t, a, i) {
+                                    let { prefixlessResource: n } = (0, l._$)(e),
+                                        r = yield n.getLyricsText(t);
+                                    if (void 0 !== i && String(e.currentTrackId) !== String(i)) return null;
+                                    if ('number' == typeof a && a !== e.requestToken) return null;
+                                    return parseLrc(r);
+                                }),
+                                sendViews: (0, l.L3)(function* (t) {
+                                    let { contextId: a, contextType: i } = t,
+                                        { lyricViewsResource: r, modelActionsLogger: o } = (0, l._$)(e);
+                                    if (e.loadingState === n.GuX.RESOLVE)
+                                        try {
+                                            if (!e.major || !e.lyricId || !e.externalLyricId || !e.currentTrackId) return;
+                                            yield r.sendViews({
+                                                lyricViews: [
+                                                    {
+                                                        id: (0, T.A)(),
+                                                        trackId: e.currentTrackId,
+                                                        majorId: e.major.id,
+                                                        lyricId: e.lyricId,
+                                                        externalLyricId: e.externalLyricId,
+                                                        lyricFormat: P.o.LRC,
+                                                        albumId: i === N.K.Album && a ? a : void 0,
+                                                        playlistId: i === N.K.Playlist && a ? a : void 0,
+                                                    },
+                                                ],
+                                            }),
+                                                (e.hasLyricsViewed = !0);
+                                        } catch (e) {
+                                            o.error(e);
+                                        }
+                                }),
+                            };
                         return t;
                     }),
                 M = l.gK
-                    .model('FullscreenPlayer', { mode: l.gK.maybeNull(l.gK.enumeration(Object.values(C))), syncLyrics: w, playQueue: S, modal: A.qt })
+                    .model('FullscreenPlayer', {
+                        mode: l.gK.maybeNull(l.gK.enumeration(Object.values(C))),
+                        shouldRestoreSyncLyrics: l.gK.optional(l.gK.boolean, !1),
+                        lastAutoHiddenSyncTrackId: l.gK.maybeNull(l.gK.union(l.gK.string, l.gK.number)),
+                        syncLyrics: w,
+                        playQueue: S,
+                        modal: A.qt,
+                    })
                     .views((e) => ({
                         get isSplitMode() {
                             return this.isPlayQueueMode || this.isSyncLyricsMode;
                         },
                         get isSyncLyricsMode() {
                             var t;
-                            let { sonataState: a } = (0, l.Zn)(e);
-                            return e.mode === C.SYNC_LYRICS && !!(null == a || null == (t = a.entityMeta) ? void 0 : t.isSyncLyricsAvailable);
+                            let { sonataState: a } = (0, l.Zn)(e),
+                                i = null == a || null == (t = a.entityMeta) ? void 0 : t.id,
+                                n = i ? String(i) : null,
+                                r = null == a || null == (t = a.entityMeta) ? void 0 : t.hasLyrics,
+                                o = null == a || null == (t = a.entityMeta) ? void 0 : t.hasSyncLyrics,
+                                s = null == a || null == (t = a.entityMeta) ? void 0 : t.isSyncLyricsAvailableWithOfflineFeature,
+                                c = !!(n && e.syncLyrics.hasLyricsForTrack(n));
+                            return e.mode === C.SYNC_LYRICS && (!!(null == a || null == (t = a.entityMeta) ? void 0 : t.isSyncLyricsAvailable) || !!s || !!o || !!r || c);
                         },
                         get isPlayQueueMode() {
                             return e.mode === C.PLAY_QUEUE;
@@ -7711,10 +8308,35 @@
                             e.syncLyrics.setInvisible(), e.modal.open();
                         },
                         showSyncLyrics() {
-                            (e.mode = C.SYNC_LYRICS), e.syncLyrics.setVisible(), e.modal.isOpened || e.modal.open();
+                            var t;
+                            (e.mode = C.SYNC_LYRICS), (e.shouldRestoreSyncLyrics = !0), (e.lastAutoHiddenSyncTrackId = null), e.syncLyrics.setVisible();
+                            let { sonataState: a } = (0, l.Zn)(e),
+                                i = null == a || null == (t = a.entityMeta) ? void 0 : t.id;
+                            i && !e.syncLyrics.hasLyricsForTrack(i) && !e.syncLyrics.isLoadingForTrack(i) && e.syncLyrics.getData(i), e.modal.isOpened || e.modal.open();
                         },
                         hideSyncLyrics() {
-                            (e.mode = null), e.syncLyrics.setInvisible();
+                            (e.mode = null), (e.shouldRestoreSyncLyrics = !1), (e.lastAutoHiddenSyncTrackId = null), e.syncLyrics.setInvisible();
+                        },
+                        autoHideSyncLyrics(t) {
+                            let a = null != t ? t : e.syncLyrics.currentTrackId;
+                            (e.mode = null), (e.shouldRestoreSyncLyrics = !0), (e.lastAutoHiddenSyncTrackId = null == a ? null : a), e.syncLyrics.setInvisible();
+                        },
+                        maybeRestoreSyncLyrics(t) {
+                            var a;
+                            if (!e.shouldRestoreSyncLyrics || !t) return;
+                            if (null != e.lastAutoHiddenSyncTrackId && String(e.lastAutoHiddenSyncTrackId) === String(t)) return;
+                            let { sonataState: i } = (0, l.Zn)(e),
+                                n = null == i || null == (a = i.entityMeta) ? void 0 : a.id,
+                                r = n ? String(n) : null,
+                                o = String(t),
+                                s = r && r === o ? null == i ? void 0 : i.entityMeta : null,
+                                c = !!(null == s ? void 0 : s.hasSyncLyrics) || !!(null == s ? void 0 : s.isSyncLyricsAvailable) || !!(null == s ? void 0 : s.isSyncLyricsAvailableWithOfflineFeature) || !!(null == s ? void 0 : s.hasLyrics),
+                                d = e.syncLyrics.hasLyricsForTrack(t);
+                            if (!c && !d) {
+                                !e.syncLyrics.isLoadingForTrack(t) && e.syncLyrics.getData(t);
+                                return;
+                            }
+                            (e.mode = C.SYNC_LYRICS), e.syncLyrics.setVisible(), !d && !e.syncLyrics.isLoadingForTrack(t) && e.syncLyrics.getData(t);
                         },
                         showPlayQueue() {
                             (e.mode = C.PLAY_QUEUE), e.playQueue.setVisible(), e.modal.isOpened || e.modal.open();
@@ -7724,7 +8346,7 @@
                         },
                         isModeActive: (t) => e.mode === t,
                         reset() {
-                            e.mode = null;
+                            (e.mode = null), (e.shouldRestoreSyncLyrics = !1), (e.lastAutoHiddenSyncTrackId = null);
                         },
                     })),
                 B = l.gK.model('QualitySettings', { modal: A.qt });
@@ -8803,24 +9425,46 @@
                 e9 = (0, d.PA)((e) => {
                     let { className: t, counterClassName: a, footerClassName: i, scrollerClassName: r, contentClassName: l, loaderClassName: o } = e,
                         d = (0, u.useRef)(null),
+                        sonataRuntimeState = (0, n.eGp)(),
                         {
                             sonataState: { entityMeta: m },
-                            fullscreenPlayer: { syncLyrics: _, hideSyncLyrics: p },
+                            fullscreenPlayer: { syncLyrics: _, autoHideSyncLyrics: p },
+                            trackLyrics: v,
                         } = (0, n.Pjs)();
                     (0, u.useEffect)(() => {
-                        _.currentTrackId !== (null == m ? void 0 : m.id) && (null == m ? void 0 : m.isSyncLyricsAvailable) && _.getData(null == m ? void 0 : m.id);
-                    }, [null == m ? void 0 : m.isSyncLyricsAvailable, null == m ? void 0 : m.id, _]);
-                    let v = (0, u.useMemo)(
-                            () => (_.isResolved ? (0, s.jsx)(e7, {}) : ((_.isRejected || _.hasInvalidLyrics) && p(), (0, s.jsx)(e$, { className: o }))),
-                            [_.isResolved, _.isRejected, _.hasInvalidLyrics, _.setInvisible, o],
-                        ),
-                        h = (0, u.useMemo)(() => ({ counterClassName: a, scrollerClassName: r, footerClassName: i }), [a, i, r]);
+                        let e = null == m ? void 0 : m.id,
+                            t = null != m && !0 === m.hasSyncLyrics,
+                            a = null != m && !1 === m.hasSyncLyrics,
+                            i = null == m ? void 0 : m.trackSource,
+                            n = e && _.currentTrackId !== e && (t || a || !!(null == m ? void 0 : m.hasLyrics) || 'UGC' === i),
+                            r = getNextQueueTrackMeta(sonataRuntimeState);
+                        lrclibSyncSonataStateRef = sonataRuntimeState;
+                        n && _.getData(e), _.prefetchTrack(r);
+                    }, [null == m ? void 0 : m.hasSyncLyrics, null == m ? void 0 : m.hasLyrics, null == m ? void 0 : m.trackSource, null == m ? void 0 : m.id, _.currentTrackId, sonataRuntimeState, _]);
+                    (0, u.useEffect)(() => {
+                        let e = null == m ? void 0 : m.id,
+                            t = null == e ? null : String(e),
+                            a = null == _.currentTrackId ? null : String(_.currentTrackId);
+                        if (!t || !a || t !== a) return;
+                        if (_.isLoadingForTrack(t)) return;
+                        (_.isRejected || _.hasInvalidLyrics) && p(e);
+                    }, [null == m ? void 0 : m.id, _.currentTrackId, _.isLoading, _.isRejected, _.hasInvalidLyrics, _.lines, _, p]);
+                    let h = (0, u.useMemo)(() => {
+                            let e = null == m ? void 0 : m.id,
+                                t = e ? String(e) : null,
+                                a = !!(null == m ? void 0 : m.isSyncLyricsAvailable) || !!(null == m ? void 0 : m.isSyncLyricsAvailableWithOfflineFeature) || !!(null == m ? void 0 : m.hasSyncLyrics) || !!(null == m ? void 0 : m.hasLyrics) || (!!t && _.hasLyricsForTrack(t));
+                            if (_.isResolved) return (0, s.jsx)(e7, { key: null == _.currentTrackId ? 'sync-lyrics-no-track' : String(_.currentTrackId) });
+                            if (!a && t && _.isLoadingForTrack(t)) return null;
+                            if (_.isRejected || _.hasInvalidLyrics) return null;
+                            return (0, s.jsx)(e$, { className: o });
+                        }, [null == m ? void 0 : m.id, null == m ? void 0 : m.isSyncLyricsAvailable, null == m ? void 0 : m.isSyncLyricsAvailableWithOfflineFeature, null == m ? void 0 : m.hasSyncLyrics, null == m ? void 0 : m.hasLyrics, _.isLoading, _.currentTrackId, _.lines, _.isResolved, _.isRejected, _.hasInvalidLyrics, o]),
+                        g = (0, u.useMemo)(() => ({ counterClassName: a, scrollerClassName: r, footerClassName: i }), [a, i, r]);
                     return (0, s.jsx)(eV.Provider, {
-                        value: h,
+                        value: g,
                         children: (0, s.jsx)('div', {
                             ref: d,
                             className: (0, c.$)(eG().root, t),
-                            children: (0, s.jsx)('div', { className: (0, c.$)(eG().content, l), ...(0, R.Am)(R.e8.player.SYNC_LYRICS_CONTENT), children: v }),
+                            children: (0, s.jsx)('div', { className: (0, c.$)(eG().content, l), ...(0, R.Am)(R.e8.player.SYNC_LYRICS_CONTENT), children: h }),
                         }),
                     });
                 });
@@ -9485,14 +10129,15 @@
                                 radius: 'round',
                                 size: 'xxxs',
                                 variant: 'text',
-                                disabled: !(null == (e = d.entityMeta) ? void 0 : e.isSyncLyricsAvailable) || m,
+                                disabled:
+                                    !(!!(null == (e = d.entityMeta) ? void 0 : e.isSyncLyricsAvailable) || !!(null == d.entityMeta ? void 0 : d.entityMeta.isSyncLyricsAvailableWithOfflineFeature) || !!(null == d.entityMeta ? void 0 : d.entityMeta.hasSyncLyrics) || !!(null == d.entityMeta ? void 0 : d.entityMeta.hasLyrics) || ((null == d.entityMeta ? void 0 : d.entityMeta.id) && r.syncLyrics.hasLyricsForTrack(null == d.entityMeta ? void 0 : d.entityMeta.id))) || m,
                                 withRipple: !1,
                                 withHover: !1,
                                 'aria-label': t,
                                 icon: (0, s.jsx)(D.Icon, { variant: 'syncLyrics', size: 'xs' }),
                                 onClick: o,
                             });
-                        }, [g, N, p, o, m, null == (r = d.entityMeta) ? void 0 : r.isSyncLyricsAvailable]);
+                        }, [g, N, p, o, m, r.syncLyrics, null == (r = d.entityMeta) ? void 0 : r.isSyncLyricsAvailable, null == d.entityMeta ? void 0 : d.entityMeta.isSyncLyricsAvailableWithOfflineFeature, null == d.entityMeta ? void 0 : d.entityMeta.hasSyncLyrics, null == d.entityMeta ? void 0 : d.entityMeta.hasLyrics, null == d.entityMeta ? void 0 : d.entityMeta.id]);
                     return (0, s.jsx)('div', {
                         className: (0, c.$)(tf().footer, l),
                         children: (0, s.jsxs)('div', {
@@ -9536,8 +10181,8 @@
                             p && !A && o && d();
                         }, [d, p, o, A]),
                         P = (0, u.useCallback)(() => {
-                            if (null == b ? void 0 : b.isSyncLyricsAvailable) return p ? g() : v();
-                        }, [null == b ? void 0 : b.isSyncLyricsAvailable, g, p, v]),
+                            if ((null == b ? void 0 : b.isSyncLyricsAvailable) || (null == b ? void 0 : b.isSyncLyricsAvailableWithOfflineFeature) || (null == b ? void 0 : b.hasSyncLyrics) || (null == b ? void 0 : b.hasLyrics) || ((null == b ? void 0 : b.id) && y.hasLyricsForTrack(null == b ? void 0 : b.id))) return p ? g() : v();
+                        }, [null == b ? void 0 : b.isSyncLyricsAvailable, null == b ? void 0 : b.isSyncLyricsAvailableWithOfflineFeature, null == b ? void 0 : b.hasSyncLyrics, null == b ? void 0 : b.hasLyrics, null == b ? void 0 : b.id, y, g, p, v]),
                         E = (0, u.useMemo)(() => {
                             if (b)
                                 return N
@@ -10120,6 +10765,7 @@
                         track: A,
                     } = (0, n.Pjs)(),
                     theState = (0, n.eGp)(),
+                    sonataRuntimeState = theState,
                     [C, N] = (0, u.useState)(!1),
                     [f, S] = (0, u.useState)(!1),
                     [downloadProgress, setDownloadProgress] = (0, u.useState)(0),
@@ -10179,6 +10825,20 @@
                             1 === e.detail && (null == i ? void 0 : i.hasTrackLink) && !x.modal.isOpened && B();
                         }
                     }),
+                    syncLyricsPrefetchHook = ((0, u.useEffect)(() => {
+                        let e = null == i ? void 0 : i.id,
+                            t = null != i && !1 === i.hasSyncLyrics,
+                            a = null == i ? void 0 : i.trackSource,
+                            n = e && x.syncLyrics.currentTrackId !== e && (t || 'UGC' === a),
+                            r = getNextQueueTrackMeta(sonataRuntimeState);
+                        lrclibSyncSonataStateRef = sonataRuntimeState;
+                        n && x.syncLyrics.getData(e), x.syncLyrics.prefetchTrack(r);
+                    }, [null == i ? void 0 : i.id, null == i ? void 0 : i.hasSyncLyrics, null == i ? void 0 : i.trackSource, x.syncLyrics, sonataRuntimeState]), null),
+                    ee = (0, u.useMemo)(() => {
+                        let e = null == i ? void 0 : i.id,
+                            t = e ? String(e) : null;
+                        return !!(null == i ? void 0 : i.isSyncLyricsAvailableWithOfflineFeature) || !!(null == i ? void 0 : i.hasLyrics) || (!!t && x.syncLyrics.hasLyricsForTrack(t));
+                    }, [null == i ? void 0 : i.id, null == i ? void 0 : i.isSyncLyricsAvailableWithOfflineFeature, null == i ? void 0 : i.hasLyrics, x.syncLyrics.currentTrackId, x.syncLyrics.lines, x.syncLyrics.isResolved]),
                     G = (0, u.useCallback)(
                         (e) => {
                             let { isPopoverEnabled: t } = e,
@@ -10188,8 +10848,8 @@
                                 radius: 'round',
                                 size: 'xxxs',
                                 variant: 'text',
-                                disabled: !(null == i ? void 0 : i.isSyncLyricsAvailableWithOfflineFeature) || y,
-                                'aria-hidden': !(null == i ? void 0 : i.isSyncLyricsAvailableWithOfflineFeature),
+                                disabled: !ee || y,
+                                'aria-hidden': !ee,
                                 withRipple: !1,
                                 'aria-label': a,
                                 icon: (0, s.jsx)(D.Icon, { variant: 'syncLyrics', size: 'xs' }),
@@ -10197,7 +10857,7 @@
                                 ...(0, R.Am)(R.e8.player.PLAYERBAR_DESKTOP_SYNC_LYRICS_BUTTON),
                             });
                         },
-                        [T, x.showSyncLyrics, null == i ? void 0 : i.isSyncLyricsAvailableWithOfflineFeature, y],
+                        [T, x.showSyncLyrics, ee, y],
                     ),
                     $ = (0, u.useMemo)(
                         () =>
