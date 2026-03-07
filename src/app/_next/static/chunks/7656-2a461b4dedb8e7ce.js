@@ -2313,39 +2313,343 @@
                     });
                 });
             var e3 = a(53516),
-                e9 = a.n(e3);
+                e9 = a.n(e3),
+                tModal = a(32692),
+                tInput = a(19009),
+                tEditContentStyles = a(55088),
+                tEditContent = a.n(tEditContentStyles);
             let te = (0, d.PA)((e) => {
                 let { playlist: t } = e,
                     a = (0, c.useRef)(null),
-                    { ugcUploadCenter: r } = (0, i.Pjs)(),
-                    { formatMessage: l } = (0, f.A)(),
-                    o = (0, c.useCallback)(() => {
+                    {
+                        ugcUploadCenter: r,
+                        fullscreenPlayer: s,
+                        settings: { isMobile: m },
+                    } = (0, i.Pjs)(),
+                    { notify: l } = (0, i.lkh)(),
+                    { formatMessage: G0 } = (0, f.A)(),
+                    [u, g] = (0, c.useState)(!1),
+                    [v, x] = (0, c.useState)(''),
+                    [linkPrefetchState, setLinkPrefetchState] = (0, c.useState)({ status: 'idle', trackCount: 0, message: '' }),
+                    [isLinkImporting, setIsLinkImporting] = (0, c.useState)(!1),
+                    prefetchRequestRef = (0, c.useRef)(0),
+                    prefetchTimerRef = (0, c.useRef)(null),
+                    activeImportSessionRef = (0, c.useRef)(null),
+                    isValidHttpUrl = (e) => {
+                        try {
+                            let t = new URL(e);
+                            return 'http:' === t.protocol || 'https:' === t.protocol;
+                        } catch (e) {
+                            return !1;
+                        }
+                    },
+                    isYoutubeUrl = (e) => {
+                        try {
+                            let t = new URL(e),
+                                a = t.hostname.toLowerCase();
+                            return 'youtu.be' === a || 'youtube.com' === a || 'music.youtube.com' === a || a.endsWith('.youtube.com');
+                        } catch (e) {
+                            return !1;
+                        }
+                    },
+                    S = v.trim(),
+                    R = !!S && !isValidHttpUrl(S),
+                    B = !R && !!S && isYoutubeUrl(S),
+                    F = !R && 'ready' === linkPrefetchState.status,
+                    openFilePicker = (0, c.useCallback)(() => {
                         var e;
                         null == a || null == (e = a.current) || e.click();
                     }, [a]),
-                    s = (0, c.useCallback)(
+                    openImportModal = (0, o.c)(() => {
+                        g(!0);
+                    }),
+                    closeImportModal = (0, c.useCallback)(() => {
+                        prefetchRequestRef.current += 1;
+                        prefetchTimerRef.current && clearTimeout(prefetchTimerRef.current);
+                        (prefetchTimerRef.current = null), g(!1), x(''), setLinkPrefetchState({ status: 'idle', trackCount: 0, message: '' });
+                    }, []),
+                    onFilesSelected = (0, c.useCallback)(
                         (e) => {
                             let a = e.target.files;
-                            a && a.length > 0 && r.appendFiles([...a], t), (e.target.value = '');
+                            a && a.length > 0 && (r.appendFiles([...a], t), closeImportModal()), (e.target.value = '');
                         },
-                        [t, r],
-                    );
+                        [t, r, closeImportModal],
+                    ),
+                    decodeBase64 = (0, c.useCallback)((e) => {
+                        let t = atob(e),
+                            a = new Uint8Array(t.length);
+                        for (let e = 0; e < t.length; e++) a[e] = t.charCodeAt(e);
+                        return a;
+                    }, []),
+                    onLinkChange = (0, c.useCallback)((e) => {
+                        x(e.target.value);
+                    }, []),
+                    importByLink = (0, o.c)(async () => {
+                        let e = S;
+                        if (!e || R || !F || isLinkImporting) return;
+                        let a = `playlist-link-import|${Date.now()}|${Math.random().toString(36).slice(2)}`;
+                        activeImportSessionRef.current = a;
+                        setIsLinkImporting(!0);
+                        try {
+                            if (!(null == window ? void 0 : window.playlistLinkImporter)) throw new Error('Импорт по ссылке недоступен');
+                            let n = await window.playlistLinkImporter.importTrack(e, a),
+                                c = Math.max(0, Number(null == n ? void 0 : n.importedCount) || 0),
+                                u = Math.max(0, Number(null == n ? void 0 : n.failedCount) || 0);
+                            if (u > 0) {
+                                let e = Array.isArray(null == n ? void 0 : n.errors) ? n.errors.filter(Boolean) : [],
+                                    t = e
+                                        .slice(0, 3)
+                                        .map((e, t) => `${t + 1}. ${e}`)
+                                        .join('\n'),
+                                    a = u > e.length ? `${t ? `${t}\n` : ''}Еще пропущено: ${u - e.length}` : t,
+                                    r = `Не удалось импортировать ${u} трек(ов)${a ? `\n${a}` : ''}`;
+                                l((0, n.jsx)(N.hT, { error: r }), { containerId: s.modal.isOpened ? i.uQT.FULLSCREEN_ERROR : i.uQT.ERROR });
+                            }
+                            c > 0 && closeImportModal();
+                        } catch (e) {
+                            let t = e instanceof Error ? e.message : 'Не удалось импортировать трек по ссылке';
+                            l((0, n.jsx)(N.hT, { error: t }), { containerId: s.modal.isOpened ? i.uQT.FULLSCREEN_ERROR : i.uQT.ERROR });
+                        } finally {
+                            setIsLinkImporting(!1);
+                        }
+                    });
+                (0, c.useEffect)(() => {
+                    if (!(null == window ? void 0 : window.playlistLinkImporter) || !window.playlistLinkImporter.onTrackImported) return;
+                    return window.playlistLinkImporter.onTrackImported((e) => {
+                        if (!e || e.importID !== activeImportSessionRef.current) return;
+                        try {
+                            let a = decodeBase64(e.bufferBase64);
+                            r.appendFiles([new File([a], e.fileName || 'imported_track.mp3', { type: e.mimeType || 'audio/mpeg' })], t);
+                        } catch (e) {
+                            let t = e instanceof Error ? e.message : 'Не удалось обработать импортированный трек';
+                            l((0, n.jsx)(N.hT, { error: t }), { containerId: s.modal.isOpened ? i.uQT.FULLSCREEN_ERROR : i.uQT.ERROR });
+                        }
+                    });
+                }, [decodeBase64, r, t, l, s.modal.isOpened]);
+                (0, c.useEffect)(() => {
+                    if (prefetchTimerRef.current) {
+                        clearTimeout(prefetchTimerRef.current);
+                        prefetchTimerRef.current = null;
+                    }
+                    if (!u) return;
+                    if (!S) {
+                        setLinkPrefetchState({ status: 'idle', trackCount: 0, message: '' });
+                        return;
+                    }
+                    if (R) {
+                        setLinkPrefetchState({ status: 'invalid', trackCount: 0, message: 'Введите корректную http(s) ссылку' });
+                        return;
+                    }
+                    if (!(null == window ? void 0 : window.playlistLinkImporter) || !window.playlistLinkImporter.prefetchTrack) {
+                        setLinkPrefetchState({ status: 'error', trackCount: 0, message: 'Проверка ссылки недоступна' });
+                        return;
+                    }
+                    let e = ++prefetchRequestRef.current;
+                    setLinkPrefetchState({ status: 'loading', trackCount: 0, message: 'Проверка ссылки...' });
+                    prefetchTimerRef.current = setTimeout(async () => {
+                        try {
+                            let t = await window.playlistLinkImporter.prefetchTrack(S);
+                            if (prefetchRequestRef.current !== e) return;
+                            if (t?.isAvailable) {
+                                let a = Math.max(1, Number(t.trackCount) || 1),
+                                    n = 'string' == typeof (null == t ? void 0 : t.artist) ? t.artist.trim() : '',
+                                    i = 'string' == typeof (null == t ? void 0 : t.title) ? t.title.trim() : '',
+                                    r = n && i ? `Будет загружен трек ${n} - ${i}` : '',
+                                    l = t?.isPlaylist ? (r ? `${a} треков | ${r}` : `Будет загружено треков: ${a}`) : r || 'Будет загружен 1 трек';
+                                setLinkPrefetchState({ status: 'ready', trackCount: a, message: l });
+                            } else
+                                setLinkPrefetchState({
+                                    status: 'error',
+                                    trackCount: 0,
+                                    message: t?.message || 'Загрузка по этой ссылке недоступна',
+                                });
+                        } catch (t) {
+                            if (prefetchRequestRef.current !== e) return;
+                            let a = t instanceof Error ? t.message : 'Не удалось проверить ссылку';
+                            setLinkPrefetchState({ status: 'error', trackCount: 0, message: a });
+                        } finally {
+                            prefetchRequestRef.current === e && (prefetchTimerRef.current = null);
+                        }
+                    }, 400);
+                    return () => {
+                        prefetchTimerRef.current && clearTimeout(prefetchTimerRef.current);
+                        prefetchTimerRef.current = null;
+                    };
+                }, [u, S, R]);
                 return (0, n.jsxs)(n.Fragment, {
                     children: [
                         (0, n.jsx)(P.$, {
                             size: 's',
                             radius: 'xxxl',
-                            'aria-label': l({ id: 'ugc.upload-track' }),
+                            'aria-label': G0({ id: 'ugc.upload-track' }),
                             className: e9().button,
-                            onClick: o,
+                            onClick: openImportModal,
                             ...(0, _.Am)(_.e8.pageHeader.PLAYLIST_HEADER_UPLOAD_UGC_BUTTON),
-                            children: l({ id: 'ugc.upload-track' }),
+                            children: G0({ id: 'ugc.upload-track' }),
                         }),
                         (0, n.jsx)('form', {
                             className: e9().form,
                             encType: 'multipart/form-data',
-                            children: (0, n.jsx)('input', { ref: a, type: 'file', accept: 'audio/*', onChange: s, multiple: !0 }),
+                            children: (0, n.jsx)('input', { ref: a, type: 'file', accept: 'audio/*', onChange: onFilesSelected, multiple: !0 }),
                         }),
+                        u
+                            ? (0, n.jsxs)(tModal.a, {
+                                  size: 'fitContent',
+                                  placement: m ? 'default' : 'center',
+                                  open: u,
+                                  className: tEditContent().root,
+                                  contentClassName: tEditContent().modalContent,
+                                  showHeader: !1,
+                                  escapeKey: !1,
+                                  closeOnOutsidePress: !1,
+                                  isMobile: m,
+                                  containerProps: (0, _.Am)(_.e8.ugc.UGC_EDIT_MODAL),
+                                  overlayColor: 'full',
+                                  children: [
+                                      (0, n.jsxs)('div', {
+                                          className: tEditContent().header,
+                                          children: [
+                                              (0, n.jsx)(y.Heading, {
+                                                  variant: 'h4',
+                                                  size: 'm',
+                                                  weight: 'bold',
+                                                  className: tEditContent().title,
+                                                  children: 'Импорт треков',
+                                              }),
+                                              (0, n.jsx)(P.$, {
+                                                  radius: 'round',
+                                                  color: 'secondary',
+                                                  size: 'xxs',
+                                                  icon: (0, n.jsx)(j.Icon, { variant: 'close', size: 'xxs' }),
+                                                  onClick: closeImportModal,
+                                                  'aria-label': G0({ id: 'ugc.close-edit-popup' }),
+                                                  ...(0, _.Am)(_.e8.ugc.UGC_EDIT_MODAL_CLOSE_BUTTON),
+                                              }),
+                                          ],
+                                      }),
+                                      (0, n.jsxs)('div', {
+                                          className: tEditContent().content,
+                                          children: [
+                                              (0, n.jsxs)('div', {
+                                                  className: tEditContent().field,
+                                                  style: {
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'space-between',
+                                                      gap: 'var(--ym-spacer-size-m)',
+                                                      flexWrap: 'wrap',
+                                                  },
+                                                  children: [
+                                                      (0, n.jsx)(y.Caption, {
+                                                          variant: 'div',
+                                                          size: 'm',
+                                                          className: tEditContent().label,
+                                                          style: { marginBlockEnd: 0 },
+                                                          children: 'Локальные треки',
+                                                      }),
+                                                      (0, n.jsx)(P.$, {
+                                                          radius: 'xxxl',
+                                                          color: 'secondary',
+                                                          size: m ? 'l' : 'm',
+                                                          className: tEditContent().button,
+                                                          onClick: openFilePicker,
+                                                          children: 'Выбрать файлы',
+                                                      }),
+                                                  ],
+                                              }),
+                                              (0, n.jsxs)('div', {
+                                                  className: tEditContent().field,
+                                                  style: { display: 'flex', alignItems: 'center', gap: 'var(--ym-spacer-size-s)' },
+                                                  children: [
+                                                      (0, n.jsx)('div', {
+                                                          style: { flex: 1, height: '1px', background: 'var(--ym-controls-color-secondary-default-enabled)' },
+                                                      }),
+                                                      (0, n.jsx)(y.Caption, {
+                                                          variant: 'div',
+                                                          size: 's',
+                                                          style: { color: 'var(--ym-controls-color-secondary-text-enabled)', whiteSpace: 'nowrap' },
+                                                          children: 'или',
+                                                      }),
+                                                      (0, n.jsx)('div', {
+                                                          style: { flex: 1, height: '1px', background: 'var(--ym-controls-color-secondary-default-enabled)' },
+                                                      }),
+                                                  ],
+                                              }),
+                                              (0, n.jsxs)('div', {
+                                                  className: tEditContent().field,
+                                                  children: [
+                                                      (0, n.jsx)(y.Caption, { variant: 'div', size: 'm', className: tEditContent().label, children: 'Ссылка' }),
+                                                      (0, n.jsx)(tInput.p, {
+                                                          value: v,
+                                                          type: 'url',
+                                                          inputMode: 'url',
+                                                          autoCapitalize: 'none',
+                                                          autoCorrect: 'off',
+                                                          spellCheck: !1,
+                                                          'aria-invalid': R || 'error' === linkPrefetchState.status || 'invalid' === linkPrefetchState.status,
+                                                          containerClassName:
+                                                              R || 'error' === linkPrefetchState.status || 'invalid' === linkPrefetchState.status
+                                                                  ? ''.concat(tEditContent().input, ' ').concat(tEditContent().input_error)
+                                                                  : tEditContent().input,
+                                                          placeholder: 'https://...',
+                                                          onChange: onLinkChange,
+                                                          minLength: 1,
+                                                          maxLength: 2048,
+                                                      }),
+                                                      S &&
+                                                          (R || 'idle' !== linkPrefetchState.status) &&
+                                                          (0, n.jsx)(y.Caption, {
+                                                              variant: 'div',
+                                                              size: 's',
+                                                              style: {
+                                                                  color:
+                                                                      R || 'error' === linkPrefetchState.status || 'invalid' === linkPrefetchState.status
+                                                                          ? 'var(--ym-message-color-error-text-enabled)'
+                                                                          : 'var(--ym-controls-color-primary-text-enabled)',
+                                                                  marginBlockStart: 'var(--ym-spacer-size-xs)',
+                                                              },
+                                                              children: R ? 'Введите корректную http(s) ссылку' : linkPrefetchState.message,
+                                                          }),
+                                                  ],
+                                              }),
+                                              B &&
+                                                  (0, n.jsx)(y.Caption, {
+                                                      variant: 'div',
+                                                      size: 's',
+                                                      style: {
+                                                          color: 'var(--ym-controls-color-secondary-text-enabled)',
+                                                          marginBlockStart: 'calc(var(--ym-spacer-size-s) * -1)',
+                                                          marginBlockEnd: 'var(--ym-spacer-size-m)',
+                                                      },
+                                                      children: 'Не забудьте добавить в proxy/VPN процесс yt-dlp.exe',
+                                                  }),
+                                              (0, n.jsxs)('div', {
+                                                  className: tEditContent().buttons,
+                                                  children: [
+                                                      (0, n.jsx)(P.$, {
+                                                          radius: 'xxxl',
+                                                          color: 'secondary',
+                                                          size: m ? 'l' : 'm',
+                                                          className: tEditContent().button,
+                                                          onClick: closeImportModal,
+                                                          children: (0, n.jsx)(D.A, { id: 'interface-actions.cancel' }),
+                                                      }),
+                                                      (0, n.jsx)(P.$, {
+                                                          radius: 'xxxl',
+                                                          color: 'primary',
+                                                          size: m ? 'l' : 'm',
+                                                          className: tEditContent().button,
+                                                          onClick: importByLink,
+                                                          disabled: !F || isLinkImporting,
+                                                          children: 'Импортировать по ссылке',
+                                                      }),
+                                                  ],
+                                              }),
+                                          ],
+                                      }),
+                                  ],
+                              })
+                            : null,
                     ],
                 });
             });
