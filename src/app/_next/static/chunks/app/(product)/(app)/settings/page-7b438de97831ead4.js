@@ -743,7 +743,7 @@
                                             label: 'Boosty',
                                             tooltip: {
                                                 title: 'Премиум функция',
-                                                description: isPremium ? 'У вас есть подписка на Boosty' : 'Подпишитись на Boosty, чтобы разблокировать',
+                                                description: isPremium ? 'У вас есть подписка на Boosty' : 'Подпишитесь на Boosty, чтобы разблокировать',
                                             },
                                         }),
                                     ],
@@ -1572,7 +1572,7 @@
                                             label: 'Boosty',
                                             tooltip: {
                                                 title: 'Премиум функция',
-                                                description: isPremium ? 'У вас есть подписка на Boosty' : 'Подпишитись на Boosty, чтобы разблокировать',
+                                                description: isPremium ? 'У вас есть подписка на Boosty' : 'Подпишитесь на Boosty, чтобы разблокировать',
                                             },
                                         }),
                                     ],
