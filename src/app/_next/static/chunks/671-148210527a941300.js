@@ -253,6 +253,7 @@
                                                     [$().root_applicationPreserveTitleBar]: H || Z,
                                                     [$().root_withBarBelow]: J.isVisible || ep,
                                                     [I().root_withAxeBanner]: ei.isVisible,
+                                                    ['modSettings_alwaysWideBar']: window.ALWAYS_WIDE_BAR?.(),
                                                 },
                                                 j,
                                             ),
