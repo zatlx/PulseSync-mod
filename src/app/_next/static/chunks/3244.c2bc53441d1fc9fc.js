@@ -231,7 +231,8 @@
                     let { h: n, s: i, l: r } = (0, c.g8k)(e);
                     return { top: q(n, i + (t ? 25 : 15), r + (t ? 15 : 10)), middle: q(n, i + (t ? 20 : 15), r + (t ? 10 : 5)), bottom: q(n, i, r) };
                 },
-                J = (e, t) => ((window.VIBE_ANIMATION_USE_CUSTOM_COLORS?.() ?? !0) ? G(e, t) : void 0),
+                Q = () => window.VIBE_ANIMATION_USE_CUSTOM_COLORS?.() ?? !0,
+                J = (e, t) => (Q() ? G(e, t) : void 0),
                 M = (0, r.PA)((e) => {
                     var t, n, r, a, o, u, d, f;
                     let { vibeAnimationState: v, isIntersecting: x, forwardRef: y, className: A } = e,
@@ -299,7 +300,7 @@
                             i = new g.a6({
                                 offscreenCanvas: n,
                                 state: v,
-                                collectionHue: R.collectionHue,
+                                collectionHue: Q() ? void 0 : R.collectionHue,
                                 fps: window.VIBE_ANIMATION_MAX_FPS?.() ?? 25,
                                 shaderOptions: void 0,
                                 onMessage: D,
@@ -309,7 +310,7 @@
                         let r = null == (t = I.entityMeta) || null == (e = t.trackParameters) ? void 0 : e.hue,
                             l = R.collectionHue,
                             a = (I && I.entityMeta && I.entityMeta.averageColor) || (I && I.entityMeta && I.entityMeta.derivedColors && 'string' == typeof I.entityMeta.derivedColors.average ? I.entityMeta.derivedColors.average : null);
-                        i.applySettings({ hue: r, collectionHue: l, customColors: J(a, !!a) });
+                        Q() ? i.applySettings({ customColors: J(a, !!a) }) : i.applySettings({ hue: r, collectionHue: l });
                     }, [
                         j,
                         P,
@@ -345,7 +346,7 @@
                     }, [C, k]),
                     (0, l.useEffect)(() => {
                         let e = (I && I.entityMeta && I.entityMeta.averageColor) || (I && I.entityMeta && I.entityMeta.derivedColors && 'string' == typeof I.entityMeta.derivedColors.average ? I.entityMeta.derivedColors.average : null);
-                        null == k || k.applySettings({ customColors: J(e, !!e) });
+                        Q() && (null == k || k.applySettings({ customColors: J(e, !!e) }));
                     }, [I && I.entityMeta && I.entityMeta.derivedColors && I.entityMeta.derivedColors.average, I && I.entityMeta && I.entityMeta.averageColor, k]),
                     (0, l.useEffect)(() => {
                         let e = I && I.entityMeta,
@@ -438,7 +439,7 @@
                             o = (i && i.averageColor) || (i && i.derivedColors && 'string' == typeof i.derivedColors.average ? i.derivedColors.average : null),
                             s = J(o, !!o);
                         a && R.setUserCollectionHue(a),
-                            K ? null == k || k.playAnimation({ hue: null != B ? B : 0, energy: l, collectionHue: a, customColors: s }) : null == k || k.idleAnimation();
+                            K ? null == k || k.playAnimation(Q() ? { energy: l, customColors: s } : { hue: null != B ? B : 0, energy: l, collectionHue: a }) : null == k || k.idleAnimation();
                     }, [
                         K,
                         null == (e = I.entityMeta) || null == (t = e.trackParameters) ? void 0 : t.energy,
