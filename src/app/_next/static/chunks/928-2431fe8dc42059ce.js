@@ -8415,7 +8415,9 @@
                 D = a(5956),
                 K = a(32692),
                 U = a(62662);
-            let F = (e) => ({ '--player-average-color-background': (0, k.ye)(null == e ? void 0 : e.averageColor) });
+            let F = (e) => ({
+                '--player-average-color-background': (0, k.ye)(null == e || (window.DISABLE_PER_TRACK_COLORS?.() ?? !1) ? void 0 : e.averageColor),
+            });
             var z = a(38117),
                 V = a.n(z),
                 W = a(95424),
